@@ -1,0 +1,3 @@
+### Requirements
+Currently using elasticsearch-dsl-py. Master branch. Not yet available via pip.
+https://github.com/elasticsearch/elasticsearch-dsl-py
