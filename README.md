@@ -21,7 +21,7 @@ Bungiesearch is in active development, so this section may be out of date.
 ## Settings
 You must defined `BUNGIESEARCH` in your Django settings in order for bungiesearch to know elasticsearch URL(s) and which index name contains mappings for each ModelIndex.
 
-```
+```python
 BUNGIESEARCH = {
                 'URLS': ['localhost'], # No leading http:// or the elasticsearch client will complain.
                 'INDICES': {'main_index': 'myproject.myapp.myindices'} # Must be a module path.
@@ -38,7 +38,7 @@ Any Django model to be managed by bungiesearch must have a defined ModelIndex su
 ### Django Model
 Here's the model we'll use throughout this example.
 
-```
+```python
 class Article(models.Model):
     title = models.TextField(db_index=True)
     authors = models.TextField(blank=True)
@@ -62,7 +62,7 @@ The following ModelIndex will generate a mapping containing all fields from `Art
 
 These default attributes can be overwritten with `ArticleIndex.Meta.hotfixes`: each dictionary key must be field defined either in the model or in the ModelIndex subclass (`ArticleIndex` in this case).
 
-```
+```python
 class ArticleIndex(ModelIndex):
     effectived_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
     meta_data = StringField(eval_as='" ".join([fld for fld in [obj.link, obj.tweet_count, obj.raw] if fld])')
