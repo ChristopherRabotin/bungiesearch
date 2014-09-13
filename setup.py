@@ -8,7 +8,7 @@ __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
 long_description = 'Should have been loaded.'
-with open(join(dirname(__file__), 'README')) as f:
+with open(join(dirname(__file__), 'README.md')) as f:
     long_description = f.read().strip()
 
 
@@ -34,7 +34,7 @@ setup(
     author_email="christopher@sparrho.com",
     packages=find_packages(
         where='.',
-        exclude=('test*',)
+        exclude=('bungiesearch/tests',)
     ),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
