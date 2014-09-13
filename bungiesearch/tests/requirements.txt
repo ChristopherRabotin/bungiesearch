@@ -1,0 +1,11 @@
+Django>=1.5
+cov-core==1.14.0
+coverage==3.7.1
+elasticsearch==1.2.0
+-e git+https://github.com/elasticsearch/elasticsearch-dsl-py@b0a6ba1a4e512014da53edf16ee577218d876f18#egg=elasticsearch_dsl-master
+py==1.4.24
+pytest==2.6.2
+pytest-cov==1.8.0
+six==1.8.0
+urllib3==1.9
+wsgiref==0.1.2
