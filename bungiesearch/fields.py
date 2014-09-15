@@ -87,7 +87,7 @@ class StringField(AbstractField):
     defaults = {'analyzer': 'snowball'}
 
     def value(self, obj):
-        striptags(super(StringField, self).value(obj))
+        return striptags(super(StringField, self).value(obj))
 
     def __unicode__(self):
         return 'StringField'

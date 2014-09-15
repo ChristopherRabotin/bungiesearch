@@ -1,14 +1,12 @@
 from _collections import defaultdict
+from elasticsearch_dsl.search import Search
 from importlib import import_module
 import logging
 
+from bungiesearch.indices import ModelIndex
 from django.conf import settings
 from elasticsearch.client import Elasticsearch
 from six import string_types
-
-from elasticsearch_dsl.search import Search
-
-from .indices import ModelIndex
 
 
 class Search(Search):
