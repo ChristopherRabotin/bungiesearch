@@ -3,7 +3,7 @@ This bit of code is mostly a mix between haystack and elasticutils.
 '''
 import logging
 
-from .fields import AbstractField, django_field_to_index
+from bungiesearch.fields import AbstractField, django_field_to_index
 
 
 class NoModelError(Exception):
@@ -169,14 +169,13 @@ class ModelIndex(object):
         :param obj_pk: Object primary key. Supersedded by `obj` if available.
         :return: A dictionary representing the object as defined in the mapping.
         '''
-        
         if not obj:
             try:
                 # We're using `filter` followed by `values` in order to only fetch the required fields.
                 obj = self.model.objects.filter(pk=obj_pk).values(*self.fields_to_fetch)[0]
             except Exception as e:
                 raise ValueError('Could not find object of primary key = {} in model {}. (Original exception: {}.)'.format(obj_pk, self.model, e))
-        
+
         return dict((name, field.value(obj)) for name, field in self.fields.iteritems())
 
     def _get_fields(self, fields, excludes, hotfixes):
