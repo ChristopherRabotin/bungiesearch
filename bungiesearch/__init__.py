@@ -9,11 +9,38 @@ from elasticsearch.client import Elasticsearch
 from six import string_types
 
 
-class Search(Search):
+class Bungiesearch(Search):
     '''
     This object is used to read Django settings and initialize the elasticsearch connection.
     '''
+    DEFAULT_TIMEOUT = 5
+    BUNGIE = settings.BUNGIESEARCH
+
+    # The following code loads each model index_name module (as defined in the settings) and stores
+    # index_name name to model index_name, and index_name name to model. Settings shouldn't change between
+    # subsequent calls to Search(), which is why this is static code.
+
     _cached_es_instances = {}
+    # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
+    _index_to_model_idx, _index_to_model, _model_name_to_model_idx = defaultdict(list), defaultdict(list), {}
+    for index_name, idx_module in BUNGIE['INDICES'].iteritems():
+        index_module = import_module(idx_module)
+        for index_obj in index_module.__dict__.itervalues():
+            try:
+                if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
+                    index_instance = index_obj()
+                    _index_to_model_idx[index_name].append(index_instance)
+                    _index_to_model[index_name].append(index_instance.get_model())
+                    _model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
+            except TypeError:
+                pass # Oops, just attempted to get subclasses of a non-class.
+
+    # Create reverse maps in order to have O(1) access.
+    _model_to_index, _model_name_to_index = {}, {}
+    for index_name, models in _index_to_model.iteritems():
+        for model in models:
+            _model_to_index[model] = index_name
+            _model_name_to_index[model.__name__] = index_name
 
     @classmethod
     def _build_key(cls, urls, timeout, **settings):
@@ -34,6 +61,61 @@ class Search(Search):
         key = (urls, timeout, settings)
         return key
 
+    @classmethod
+    def get_index(cls, model, via_class=False):
+        '''
+        Returns the index name (as a string) for the given model as a class or a string.
+        :param model: model name or model class if via_class set to True.
+        :param via_class: set to True if parameter model is a class.
+        :raise KeyError: If the provided model does not have any index associated.
+        '''
+        try:
+            return cls._model_to_index[model] if via_class else cls._model_name_to_index[model]
+        except KeyError:
+            raise KeyError('Could not find any index defined for {}. Is the model in one of the model index modules of BUNGIESEARCH["INDICES"]?'.format(model))
+
+    @classmethod
+    def get_model_index(cls, model):
+        '''
+        Returns the model index for the given model as a string.
+        :param model: model name or model class if via_class set to True.
+        :raise KeyError: If the provided model does not have any index associated.
+        '''
+        try:
+            return cls._model_name_to_model_idx[model]
+        except KeyError:
+            raise KeyError('Could not find any model index defined for model named {}.'.format(model))
+
+    @classmethod
+    def get_indices(cls):
+        '''
+        Returns the list of indices defined in the settings.
+        '''
+        return cls._index_to_model_idx.keys()
+
+    @classmethod
+    def get_models(cls, index, as_class=False):
+        '''
+        Returns the list of models defined for this index.
+        :param index: index name.
+        :param as_class: set to True to return the model as a model object instead of as a string.
+        '''
+        try:
+            return cls._index_to_model[index] if as_class else [model.__name__ for model in cls._index_to_model[index]]
+        except KeyError:
+            raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
+
+    @classmethod
+    def get_model_indices(cls, index):
+        '''
+        Returns the list of model indices (i.e. ModelIndex objects) defined for this index.
+        :param index: index name.
+        '''
+        try:
+            return cls._index_to_model_idx[index]
+        except KeyError:
+            raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
+
     def __init__(self, urls=None, timeout=None, force_new=False, **es_settings):
         '''
         Creates a new ElasticSearch DSL object. Grabs the ElasticSearch connection from the pool
@@ -49,51 +131,22 @@ class Search(Search):
         :param **es_settings: Additional settings to pass to the low level elasticsearch client.
         '''
 
-        DEFAULT_TIMEOUT = 5
-        BUNGIE = settings.BUNGIESEARCH
-
-        urls = urls or BUNGIE['URLS']
+        urls = urls or Bungiesearch.BUNGIE['URLS']
         if not timeout:
-            timeout = getattr(BUNGIE, 'TIMEOUT', DEFAULT_TIMEOUT)
+            timeout = getattr(Bungiesearch.BUNGIE, 'TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
 
         # Building a caching key to cache the es_instance for later use (and retrieved a previously cached es_instance).
-        cache_key = Search._build_key(urls, timeout, **es_settings)
+        cache_key = Bungiesearch._build_key(urls, timeout, **es_settings)
         es_instance = None
         if not force_new:
-            if cache_key in Search._cached_es_instances:
-                es_instance = Search._cached_es_instances[cache_key]
+            if cache_key in Bungiesearch._cached_es_instances:
+                es_instance = Bungiesearch._cached_es_instances[cache_key]
 
         if not es_instance:
             es_instance = Elasticsearch(urls, timeout=timeout, **es_settings)
-            Search._cached_es_instances[cache_key] = es_instance
+            Bungiesearch._cached_es_instances[cache_key] = es_instance
 
-        super(Search, self).__init__(using=es_instance)
-
-        # The following code loads each model index_name module (as defined in the settings) and stores
-        # index_name name to model index_name, and index_name name to model. Settings shouldn't change between
-        # subsequent calls to Search(), so this code (and possible all of Search really) could be
-        # a singleton (but we would have to manage specific es_settings). That's for later.
-
-        # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
-        self._index_to_model_idx, self._index_to_model, self._model_name_to_model_idx = defaultdict(list), defaultdict(list), {}
-        for index_name, idx_module in BUNGIE['INDICES'].iteritems():
-            index_module = import_module(idx_module)
-            for index_obj in index_module.__dict__.itervalues():
-                try:
-                    if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
-                        index_instance = index_obj()
-                        self._index_to_model_idx[index_name].append(index_instance)
-                        self._index_to_model[index_name].append(index_instance.get_model())
-                        self._model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
-                except TypeError:
-                    pass # Oops, just attempted to get subclasses of a non-class.
-
-        # Create reverse maps in order to have O(1) access.
-        self._model_to_index, self._model_name_to_index = {}, {}
-        for index_name, models in self._index_to_model.iteritems():
-            for model in models:
-                self._model_to_index[model] = index_name
-                self._model_name_to_index[model.__name__] = index_name
+        super(Bungiesearch, self).__init__(using=es_instance)
 
         # Creating instance attributes.
         self._only = [] # Stores the exact fields to fetch from the database when mapping.
@@ -105,56 +158,6 @@ class Search(Search):
         Returns the low level elasticsearch instance to perform low level operations.
         '''
         return self._using
-
-    def get_index(self, model, via_class=False):
-        '''
-        Returns the index name (as a string) for the given model as a class or a string.
-        :param model: model name or model class if via_class set to True.
-        :param via_class: set to True if parameter model is a class.
-        :raise KeyError: If the provided model does not have any index associated.
-        '''
-        try:
-            return self._model_to_index[model] if via_class else self._model_name_to_index[model]
-        except KeyError:
-            raise KeyError('Could not find any index defined for {}. Is the model in one of the model index modules of BUNGIESEARCH["INDICES"]?'.format(model))
-
-    def get_model_index(self, model):
-        '''
-        Returns the model index for the given model as a string.
-        :param model: model name or model class if via_class set to True.
-        :raise KeyError: If the provided model does not have any index associated.
-        '''
-        try:
-            return self._model_name_to_model_idx[model]
-        except KeyError:
-            raise KeyError('Could not find any model index defined for model named {}.'.format(model))
-
-    def get_indices(self):
-        '''
-        Returns the list of indices defined in the settings.
-        '''
-        return self._index_to_model_idx.keys()
-
-    def get_models(self, index, as_class=False):
-        '''
-        Returns the list of models defined for this index.
-        :param index: index name.
-        :param as_class: set to True to return the model as a model object instead of as a string.
-        '''
-        try:
-            return self._index_to_model[index] if as_class else [model.__name__ for model in self._index_to_model[index]]
-        except KeyError:
-            raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
-
-    def get_model_indices(self, index):
-        '''
-        Returns the list of model indices (i.e. ModelIndex objects) defined for this index.
-        :param index: index name.
-        '''
-        try:
-            return self._index_to_model_idx[index]
-        except KeyError:
-            raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
     def execute(self, return_results=True):
         '''
@@ -196,7 +199,7 @@ class Search(Search):
                 # Let's reposition each item in the results.
                 for item in items:
                     self.results[found_results['{}.{}'.format(model_name, item.pk)]] = item
-        
+
         if return_results:
             return self.results
 

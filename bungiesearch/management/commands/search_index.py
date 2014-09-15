@@ -5,7 +5,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 from elasticsearch.helpers import bulk_index
 
-from ... import Search
+from ... import Bungiesearch
 
 
 class Command(BaseCommand):
@@ -65,7 +65,7 @@ class Command(BaseCommand):
         del args
         logging.basicConfig(level='INFO')
 
-        src = Search()
+        src = Bungiesearch()
         es = src.get_es_instance()
 
         if not options['action']:
