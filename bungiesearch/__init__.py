@@ -4,6 +4,7 @@ from importlib import import_module
 import logging
 
 from bungiesearch.indices import ModelIndex
+import bungiesearch.managers
 from django.conf import settings
 from elasticsearch.client import Elasticsearch
 from six import string_types
