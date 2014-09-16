@@ -116,7 +116,7 @@ class Bungiesearch(Search):
         except KeyError:
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
-    def __init__(self, urls=None, timeout=None, force_new=False, **kwargs):
+    def __init__(self, urls=None, timeout=None, force_new=False, raw_results=False, **kwargs):
         '''
         Creates a new ElasticSearch DSL object. Grabs the ElasticSearch connection from the pool
         if it has already been initialized. Otherwise, creates a new one.
@@ -158,7 +158,15 @@ class Bungiesearch(Search):
         # Creating instance attributes.
         self._only = [] # Stores the exact fields to fetch from the database when mapping.
         self.results = [] # Store the mapped and unmapped results.
-        self._raw_results_only = False
+        self._raw_results_only = raw_results
+
+    def _clone(self):
+        '''
+        Must clone additional fields to those cloned by elasticsearch-dsl-py.
+        '''
+        instance = super(Bungiesearch, self)._clone()
+        instance._raw_results_only = self._raw_results_only
+        return instance
 
     def get_es_instance(self):
         '''
