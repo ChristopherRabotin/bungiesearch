@@ -116,7 +116,7 @@ class Bungiesearch(Search):
         except KeyError:
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
-    def __init__(self, urls=None, timeout=None, force_new=False, **es_settings):
+    def __init__(self, urls=None, timeout=None, force_new=False, **kwargs):
         '''
         Creates a new ElasticSearch DSL object. Grabs the ElasticSearch connection from the pool
         if it has already been initialized. Otherwise, creates a new one.
@@ -128,13 +128,17 @@ class Bungiesearch(Search):
         :param idx_alias: A list of index_name aliases or a single string representing an index_name alias, as defined in the settings. Will be merged with `index_name`.
         :param timeout: Timeout used in the connection.
         :param force_new: Set to `True` to force a new elasticsearch connection. Otherwise will aggressively use any connection with the exact same settings.
-        :param **es_settings: Additional settings to pass to the low level elasticsearch client.
+        :param **kwargs: Additional settings to pass to the low level elasticsearch client and to elasticsearch-sal-py.search.Search.
         '''
 
         urls = urls or Bungiesearch.BUNGIE['URLS']
         if not timeout:
             timeout = getattr(Bungiesearch.BUNGIE, 'TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
 
+        search_keys = ['using', 'index', 'doc_type', 'extra']
+        search_settings = dict((k, v) for k, v in kwargs.iteritems() if k in search_keys)
+        es_settings = dict((k, v) for k, v in kwargs.iteritems() if k not in search_keys)
+        
         # Building a caching key to cache the es_instance for later use (and retrieved a previously cached es_instance).
         cache_key = Bungiesearch._build_key(urls, timeout, **es_settings)
         es_instance = None
@@ -146,7 +150,10 @@ class Bungiesearch(Search):
             es_instance = Elasticsearch(urls, timeout=timeout, **es_settings)
             Bungiesearch._cached_es_instances[cache_key] = es_instance
 
-        super(Bungiesearch, self).__init__(using=es_instance)
+        if 'using' not in search_settings:
+            search_settings['using'] = es_instance
+
+        super(Bungiesearch, self).__init__(**search_settings)
 
         # Creating instance attributes.
         self._only = [] # Stores the exact fields to fetch from the database when mapping.
@@ -166,7 +173,7 @@ class Bungiesearch(Search):
         if self.results:
             return self.results if return_results else None
 
-        self.raw_results = super(Search, self).execute()
+        self.raw_results = super(Bungiesearch, self).execute()
         if self._raw_results_only:
             self.results = self.raw_results
         else:
@@ -181,8 +188,8 @@ class Bungiesearch(Search):
                     logging.warn('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
                     self.results[pos] = result
                 else:
-                    model_results[model_name].append(result._meta.id)
-                    found_results['{}.{}'.format(model_name, result._meta.id)] = pos
+                    model_results[model_name].append(result.id)
+                    found_results['{}.{}'.format(model_name, result.id)] = pos
 
             # Now that we have model ids per model name, let's fetch everything at once.
             for model_name, ids in model_results.iteritems():
@@ -196,8 +203,9 @@ class Bungiesearch(Search):
                         desired_fields = self._fields
                     else:
                         desired_fields = self._only
-                    # If we've fetched only specific fields in the elasticsearch query.
-                    items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
+                    
+                    if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
+                        items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
                 # Let's reposition each item in the results.
                 for item in items:
                     self.results[found_results['{}.{}'.format(model_name, item.pk)]] = item
@@ -218,6 +226,7 @@ class Bungiesearch(Search):
         '''
         Allows iterating on the response.
         '''
+        self.execute()
         return iter(self.results)
 
     def __len__(self):
@@ -235,5 +244,11 @@ class Bungiesearch(Search):
         if isinstance(key, slice) and key.step is not None:
             self._raw_results_only = key.step
             key.step = None
-        super(Search, self).__getitem__(key) # Calling super's __getitem__ to set `from` and `size`.
-        return self.execute()
+            single_item = key.start - key.stop == -1
+            print key.start, key.stop, key.step
+        else:
+            single_item = True
+        results = super(Bungiesearch, self).__getitem__(key).execute()
+        if single_item:
+            return results[0]
+        return results

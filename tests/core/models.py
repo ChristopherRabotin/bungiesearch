@@ -17,7 +17,7 @@ class Article(models.Model):
     negative_feedback = models.PositiveIntegerField(null=True, blank=True, default=0)
     popularity_index = models.IntegerField(default=0)
     
-    bungiesearch = BungiesearchManager()
+    objects = BungiesearchManager()
     
     class Meta:
         app_label = 'core'

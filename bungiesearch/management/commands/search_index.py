@@ -56,9 +56,15 @@ class Command(BaseCommand):
         make_option('--bulk-size',
             action='store',
             dest='bulk_size',
-            default=10,
+            default=100,
             type='int',
             help='Specify the number of items to be updated together.'),
+        make_option('--num-docs',
+            action='store',
+            dest='num_docs',
+            default=-1,
+            type='int',
+            help='Specify the maximum number of items to be indexed. By default will index the whole model.'),
         )
 
     def handle(self, *args, **options):
@@ -138,20 +144,26 @@ class Command(BaseCommand):
                 logging.info('Updating all models on index {}.'.format(options['index']))
                 model_names = src.get_models(index)
             else:
-                model_names = [src.get_models(index) for index in src.get_indices()]
+                model_names = [model for index in src.get_indices() for model in src.get_models(index)]
             # Update index.
             for model_name in model_names:
+                print 'Getting index for', model_name
                 index_name = src.get_index(model_name)
                 index_instance = src.get_model_index(model_name)
                 model = index_instance.get_model()
 
-                logging.debug('Fetching number of documents to be added to {}.'.format(model.__name__))
                 model_fetch = model.objects.all()
-                # num_docs = model_fetch.count()
-                num_docs = 50
+                if options['num_docs'] == -1:
+                    logging.info('Fetching number of documents to be added to {}.'.format(model.__name__))
+                    num_docs = model_fetch.count()
+                else:
+                    num_docs = options['num_docs']
+                    logging.warning('Forcing the number of items to be idnexed to {}.'.format(num_docs))
                 logging.info('Indexing {} documents.'.format(num_docs))
                 prev_step = 0
-                for next_step in xrange(options['bulk_size'], num_docs, options['bulk_size']):
+                bulk_size = options['bulk_size']
+                max_docs = num_docs if num_docs > bulk_size else bulk_size + 1
+                for next_step in xrange(bulk_size, max_docs, bulk_size):
                     logging.info('Indexing documents pk\'d {} to {} of {} total.'.format(prev_step, next_step, num_docs))
                     bulk_index(es, [index_instance.serialize_object(doc) for doc in model_fetch[prev_step:next_step]], index=index_name, doc_type=model.__name__)
                     prev_step = next_step

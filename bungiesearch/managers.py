@@ -7,4 +7,8 @@ class BungiesearchManager(models.Manager):
     @property
     def search(self):
         from bungiesearch import Bungiesearch
-        return Bungiesearch().index(Bungiesearch.get_index(self.model, via_class=True))
+        return Bungiesearch().index(Bungiesearch.get_index(self.model, via_class=True)).doc_type(self.model.__name__)
+    
+    def __init__(self, **kwargs):
+        super(BungiesearchManager, self).__init__(**kwargs)
+        
