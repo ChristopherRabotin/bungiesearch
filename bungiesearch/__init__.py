@@ -192,6 +192,8 @@ class Bungiesearch(Search):
                 if self._only:
                     if self._only == '__model':
                         desired_fields = model_idx.fields_to_fetch
+                    elif self._only == '__fields':
+                        desired_fields = self._fields
                     else:
                         desired_fields = self._only
                     # If we've fetched only specific fields in the elasticsearch query.
@@ -233,4 +235,5 @@ class Bungiesearch(Search):
         if isinstance(key, slice) and key.step is not None:
             self._raw_results_only = key.step
             key.step = None
-        super(Search, self).__getitem__(key)
+        super(Search, self).__getitem__(key) # Calling super's __getitem__ to set `from` and `size`.
+        return self.execute()
