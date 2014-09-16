@@ -1,29 +1,18 @@
 from datetime import datetime
 
-from bungiesearch.fields import DateField, StringField
-from bungiesearch.indices import ModelIndex
 from django.test import TestCase
 import pytz
 
 from core.models import Article
-
-
-class ArticleIndex(ModelIndex):
-    effectived_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
-    meta_data = StringField(eval_as='" ".join([fld for fld in [obj.link, str(obj.tweet_count), obj.raw] if fld])')
-
-    class Meta:
-        model = Article
-        exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
-        hotfixes = {'updated': {'null_value': '2013-07-01'},
-                    'title': {'boost': 1.75},
-                    'description': {'boost': 1.35},
-                    'full_text': {'boost': 1.125}}
+from core.search_indices import ArticleIndex
+from bungiesearch.management.commands import search_index
+from time import sleep
 
 
 class ModelIndexTestCase(TestCase):
-    def setUp(self):
-        self.art_1 = {'title': 'Title one',
+    @classmethod
+    def setUpClass(cls):
+        art_1 = {'title': 'Title one',
                      'description': 'Description of article 1.',
                      'link': 'http://example.com/article_1',
                      'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
@@ -34,13 +23,24 @@ class ModelIndexTestCase(TestCase):
                      'positive_feedback': 50,
                      'negative_feedback': 5,
                      }
-        Article.objects.create(**self.art_1)
+        Article.objects.create(**art_1)
 
-        self.art_2 = dict((k, v) for k, v in self.art_1.iteritems())
-        self.art_2['link'] += '/page2'
-        self.art_2['title'] = 'Title two'
-        self.art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
-        Article.objects.create(**self.art_2)
+        art_2 = dict((k, v) for k, v in art_1.iteritems())
+        art_2['link'] += '/page2'
+        art_2['title'] = 'Title two'
+        art_2['description'] = 'This is a second article.'
+        art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
+        Article.objects.create(**art_2)
+
+        # Let's now create the index.
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
+        print "Sleeping two seconds for Elasticsearch to index."
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
+
+    @classmethod
+    def tearDownClass(cls):
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--delete', '--guilty-as-charged'])
 
     def test_model_index_generation(self):
         '''
@@ -59,6 +59,15 @@ class ModelIndexTestCase(TestCase):
                                    'published': {'type': 'date'}}
                     }
         self.assertEqual(ArticleIndex().get_mapping(), expected, 'Got an unexpected mapping.')
+
+    def test_fetch_item(self):
+        '''
+        Test searching and mapping.
+        '''
+        self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
+        self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "Description" did not return just the second Article.')
+        db_items = list(Article.objects.all())
+        self.assertTrue(all([result in db_items for result in Article.objects.search.query('match', title='title')]), 'Searching for title "title" did not return all articles.')
 
     def test_get_model(self):
         '''
@@ -79,7 +88,7 @@ class ModelIndexTestCase(TestCase):
                                   },
                     'Title two': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
                                   'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
-                                  'description': 'Description of article 1.',
+                                  'description': 'This is a second article.',
                                   'title': 'Title two',
                                   'authors': '',
                                   'meta_data': 'http://example.com/article_1/page2 20',
