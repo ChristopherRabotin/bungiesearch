@@ -16,11 +16,7 @@ install_requires = [
     'django',
 ]
 
-tests_require = [
-    'pytest',
-    'pytest-cov',
-    'pytest-django',
-]
+tests_require = []
 
 # use external unittest for 2.6
 if sys.version_info[:2] == (2, 6):
@@ -47,6 +43,4 @@ setup(
     ],
     install_requires=install_requires,
     dependency_links = ['https://github.com/elasticsearch/elasticsearch-dsl-py#egg=elasticsearch-dsl-py'],
-    test_suite="tests.run_all_tests",
-    tests_require=tests_require,
 )
