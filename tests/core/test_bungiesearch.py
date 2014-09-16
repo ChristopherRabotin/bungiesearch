@@ -65,9 +65,21 @@ class ModelIndexTestCase(TestCase):
         Test searching and mapping.
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
-        self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "Description" did not return just the second Article.')
+        self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
         db_items = list(Article.objects.all())
         self.assertTrue(all([result in db_items for result in Article.objects.search.query('match', title='title')]), 'Searching for title "title" did not return all articles.')
+
+    def test_custom_search(self):
+        '''
+        Test searching on custom index and doc_type.
+        '''
+        search = Article.objects.custom_search(index='bungiesearch_demo', doc_type='Article')
+        es_art1 = search.query('match', _all='Description')[0]
+        db_art1 = Article.objects.get(title='Title one')
+        es_art2 = search.query('match', _all='second article')[0]
+        db_art2 = Article.objects.get(title='Title two')
+        self.assertTrue(all([es_art1.id == db_art1.id, es_art1.title == db_art1.title, es_art1.description == db_art1.description]), 'Searching for "Description" did not return the first Article.')
+        self.assertTrue(all([es_art2.id == db_art2.id, es_art2.title == db_art2.title, es_art2.description == db_art2.description]), 'Searching for "second article" did not return the second Article.')
 
     def test_get_model(self):
         '''
