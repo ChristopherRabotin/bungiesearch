@@ -268,5 +268,8 @@ class Bungiesearch(Search):
             single_item = True
         results = super(Bungiesearch, self).__getitem__(key).execute()
         if single_item:
-            return results[0]
+            try:
+                return results[0]
+            except IndexError:
+                return []
         return results
