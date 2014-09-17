@@ -66,8 +66,17 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
+    
+    def test_iteration(self):
+        '''
+        Tests iteration on Bungiesearch items.
+        '''
+        lazy_search = Article.objects.search.query('match', title='title')
         db_items = list(Article.objects.all())
-        self.assertTrue(all([result in db_items for result in Article.objects.search.query('match', title='title')]), 'Searching for title "title" did not return all articles.')
+        self.assertTrue(all([result in db_items for result in lazy_search]), 'Searching for title "title" did not return all articles.')
+        self.assertTrue(all([result in db_items for result in lazy_search[:]]), 'Searching for title "title" did not return all articles when using empty slice.')
+        self.assertEqual(len(lazy_search[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
+        self.assertEqual(len(lazy_search[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
     
     def test_no_results(self):
         '''
