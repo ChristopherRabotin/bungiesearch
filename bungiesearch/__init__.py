@@ -24,24 +24,31 @@ class Bungiesearch(Search):
     _cached_es_instances = {}
     # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
     _index_to_model_idx, _index_to_model, _model_name_to_model_idx = defaultdict(list), defaultdict(list), {}
-    for index_name, idx_module in BUNGIE['INDICES'].iteritems():
-        index_module = import_module(idx_module)
-        for index_obj in index_module.__dict__.itervalues():
-            try:
-                if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
-                    index_instance = index_obj()
-                    _index_to_model_idx[index_name].append(index_instance)
-                    _index_to_model[index_name].append(index_instance.get_model())
-                    _model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
-            except TypeError:
-                pass # Oops, just attempted to get subclasses of a non-class.
-
-    # Create reverse maps in order to have O(1) access.
     _model_to_index, _model_name_to_index = {}, {}
-    for index_name, models in _index_to_model.iteritems():
-        for model in models:
-            _model_to_index[model] = index_name
-            _model_name_to_index[model.__name__] = index_name
+    __loaded_indices__ = False
+
+    @classmethod
+    def __load_indices__(cls):
+        if cls.__loaded_indices__:
+            return
+        cls.__loaded_indices__ = True
+        for index_name, idx_module in cls.BUNGIE['INDICES'].iteritems():
+            index_module = import_module(idx_module)
+            for index_obj in index_module.__dict__.itervalues():
+                try:
+                    if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
+                        index_instance = index_obj()
+                        cls._index_to_model_idx[index_name].append(index_instance)
+                        cls._index_to_model[index_name].append(index_instance.get_model())
+                        cls._model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
+                except TypeError:
+                    pass # Oops, just attempted to get subclasses of a non-class.
+
+        # Create reverse maps in order to have O(1) access.
+        for index_name, models in cls._index_to_model.iteritems():
+            for model in models:
+                cls._model_to_index[model] = index_name
+                cls._model_name_to_index[model.__name__] = index_name
 
     @classmethod
     def _build_key(cls, urls, timeout, **settings):
@@ -132,6 +139,8 @@ class Bungiesearch(Search):
         :param **kwargs: Additional settings to pass to the low level elasticsearch client and to elasticsearch-sal-py.search.Search.
         '''
 
+        Bungiesearch.__load_indices__()
+
         urls = urls or Bungiesearch.BUNGIE['URLS']
         if not timeout:
             timeout = getattr(Bungiesearch.BUNGIE, 'TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
@@ -139,7 +148,7 @@ class Bungiesearch(Search):
         search_keys = ['using', 'index', 'doc_type', 'extra']
         search_settings = dict((k, v) for k, v in kwargs.iteritems() if k in search_keys)
         es_settings = dict((k, v) for k, v in kwargs.iteritems() if k not in search_keys)
-        
+
         # Building a caching key to cache the es_instance for later use (and retrieved a previously cached es_instance).
         cache_key = Bungiesearch._build_key(urls, timeout, **es_settings)
         es_instance = None
@@ -212,7 +221,7 @@ class Bungiesearch(Search):
                         desired_fields = self._fields
                     else:
                         desired_fields = self._only
-                    
+
                     if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
                         items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
                 # Let's reposition each item in the results.
