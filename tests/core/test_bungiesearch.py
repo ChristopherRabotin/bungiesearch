@@ -68,6 +68,14 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
         db_items = list(Article.objects.all())
         self.assertTrue(all([result in db_items for result in Article.objects.search.query('match', title='title')]), 'Searching for title "title" did not return all articles.')
+    
+    def test_no_results(self):
+        '''
+        Test empty results.
+        '''
+        self.assertEqual(list(Article.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
+        self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing" did not return an empty list on get item call.')
+
 
     def test_custom_search(self):
         '''
