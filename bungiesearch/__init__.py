@@ -208,7 +208,6 @@ class Bungiesearch(Search):
                 else:
                     model_results[model_name].append(result.id)
                     found_results['{}.{}'.format(model_name, result.id)] = pos
-
             # Now that we have model ids per model name, let's fetch everything at once.
             for model_name, ids in model_results.iteritems():
                 model_idx = self._model_name_to_model_idx[model_name]
@@ -259,11 +258,14 @@ class Bungiesearch(Search):
         attempt to fetch the Django model instance.
         :warning: Getting an item will execute this search. Any search operation or field setting *must* be done prior to getting an item.
         '''
-        if isinstance(key, slice) and key.step is not None:
-            self._raw_results_only = key.step
-            key.step = None
-            single_item = key.start - key.stop == -1
-            print key.start, key.stop, key.step
+        if isinstance(key, slice):
+            if key.step is not None:
+                self._raw_results_only = key.step
+                key.step = None
+                single_item = key.start - key.stop == -1
+                print key.start, key.stop, key.step
+            else:
+                single_item = False
         else:
             single_item = True
         results = super(Bungiesearch, self).__getitem__(key).execute()
@@ -272,4 +274,4 @@ class Bungiesearch(Search):
                 return results[0]
             except IndexError:
                 return []
-        return results
+        return results[key.start:key.stop]
