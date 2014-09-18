@@ -13,16 +13,16 @@ class ModelIndexTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         art_1 = {'title': 'Title one',
-                     'description': 'Description of article 1.',
-                     'link': 'http://example.com/article_1',
-                     'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
-                     'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
-                     'tweet_count': 20,
-                     'source_hash': 159159159159,
-                     'missing_data': '',
-                     'positive_feedback': 50,
-                     'negative_feedback': 5,
-                     }
+                 'description': 'Description of article 1.',
+                 'link': 'http://example.com/article_1',
+                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+                 'tweet_count': 20,
+                 'source_hash': 159159159159,
+                 'missing_data': '',
+                 'positive_feedback': 50,
+                 'negative_feedback': 5,
+                 }
         Article.objects.create(**art_1)
 
         art_2 = dict((k, v) for k, v in art_1.iteritems())
@@ -103,6 +103,23 @@ class ModelIndexTestCase(TestCase):
         Check model mapping.
         '''
         self.assertEqual(ArticleIndex().get_model(), Article, 'Model was not Article.')
+
+    def test_post_save(self):
+        art_1 = {'title': 'Title three',
+                 'description': 'Postsave',
+                 'link': 'http://example.com/sparrho',
+                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+                 'tweet_count': 20,
+                 'source_hash': 159159159159,
+                 'missing_data': '',
+                 'positive_feedback': 50,
+                 'negative_feedback': 5,
+                 }
+        Article.objects.create(**art_1)
+        print "Sleeping two seconds for Elasticsearch to index new item."
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
+        self.assertEqual(len(Article.objects.search.query('match', title='three')), 1, 'Searching for "three" in title did not return exactly one item.')
 
     def test_serialize_object(self):
         expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
