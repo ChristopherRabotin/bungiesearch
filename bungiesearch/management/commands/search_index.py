@@ -114,7 +114,6 @@ class Command(BaseCommand):
                 indices = [options['index']]
             else:
                 indices = src.get_indices()
-
             for index in indices:
                 mapping = {}
                 for mdl_idx in src.get_model_indices(index):

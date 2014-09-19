@@ -36,9 +36,13 @@ class ModelIndex(object):
         excludes = getattr(_meta, 'exclude', [])
         hotfixes = getattr(_meta, 'hotfixes', {})
         additional_fields = getattr(_meta, 'additional_fields', [])
+        id_field = getattr(_meta, 'id_field', 'id')
 
         # Add in fields from the model.
         self.fields.update(self._get_fields(fields, excludes, hotfixes))
+        # Elasticsearch uses '_id' to identify items uniquely, so let's duplicate that field.
+        # We're duplicating it in order for devs to still perform searches on `.id` as expected.
+        self.fields['_id'] = self.fields[id_field]
         self.fields_to_fetch = list(set(self.fields.keys()).union(additional_fields))
 
         # Adding or updating the fields which are defined at class level.
