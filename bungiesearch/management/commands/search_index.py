@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from elasticsearch.helpers import bulk_index
 
 from ... import Bungiesearch
+from ...utils import update_index
 
 
 class Command(BaseCommand):
@@ -113,7 +114,6 @@ class Command(BaseCommand):
                 indices = [options['index']]
             else:
                 indices = src.get_indices()
-
             for index in indices:
                 mapping = {}
                 for mdl_idx in src.get_model_indices(index):
@@ -147,23 +147,4 @@ class Command(BaseCommand):
                 model_names = [model for index in src.get_indices() for model in src.get_models(index)]
             # Update index.
             for model_name in model_names:
-                print 'Getting index for', model_name
-                index_name = src.get_index(model_name)
-                index_instance = src.get_model_index(model_name)
-                model = index_instance.get_model()
-
-                model_fetch = model.objects.all()
-                if options['num_docs'] == -1:
-                    logging.info('Fetching number of documents to be added to {}.'.format(model.__name__))
-                    num_docs = model_fetch.count()
-                else:
-                    num_docs = options['num_docs']
-                    logging.warning('Forcing the number of items to be idnexed to {}.'.format(num_docs))
-                logging.info('Indexing {} documents.'.format(num_docs))
-                prev_step = 0
-                bulk_size = options['bulk_size']
-                max_docs = num_docs if num_docs > bulk_size else bulk_size + 1
-                for next_step in xrange(bulk_size, max_docs, bulk_size):
-                    logging.info('Indexing documents pk\'d {} to {} of {} total.'.format(prev_step, next_step, num_docs))
-                    bulk_index(es, [index_instance.serialize_object(doc) for doc in model_fetch[prev_step:next_step]], index=index_name, doc_type=model.__name__)
-                    prev_step = next_step
+                update_index(src.get_model_index(model_name).get_model().objects.all(), model_name, bulk_size=options['bulk_size'], num_docs=options['num_docs'])

@@ -6,108 +6,6 @@ import logging
 from bungiesearch.fields import AbstractField, django_field_to_index
 
 
-class NoModelError(Exception):
-    pass
-
-class MappingType():
-
-    def __init__(self):
-        self._results_dict = {}
-        self._object = None
-
-    @classmethod
-    def from_results(cls, results_dict):
-        mt = cls()
-        mt._results_dict = results_dict
-        return mt
-
-    def _get_object_lazy(self):
-        if self._object:
-            return self._object
-        self._object = self.get_object()
-        return self._object
-
-    @classmethod
-    def get_index(cls):
-        """Returns the index to use for this mapping type.
-        You can specify the index to use for this mapping type. This
-        affects ``S`` built with this type.
-        By default, raises NotImplementedError.
-        Override this to return the index this mapping type should
-        be indexed and searched in.
-        """
-        raise NotImplementedError()
-
-    @classmethod
-    def get_mapping_type_name(cls):
-        """Returns the mapping type name.
-        You can specify the mapping type name (also sometimes called the
-        document type) with this method.
-        By default, raises NotImplementedError.
-        Override this to return the mapping type name.
-        """
-        raise NotImplementedError()
-
-    def get_object(self):
-        """Returns the model instance
-        This gets called when someone uses the ``.object`` attribute
-        which triggers lazy-loading of the object this document is
-        based on.
-        By default, this calls::
-        self.get_model().get(id=self._id)
-        where ``self._id`` is the Elasticsearch document id.
-        Override it to do something different.
-        """
-        return self.get_model().get(id=self._id)
-
-    @classmethod
-    def get_model(cls):
-        """Return the model class related to this MappingType.
-        This can be any class that has an instance related to this
-        MappingType by id.
-        For example, if you're using Django and your MappingType is
-        related to a Django model--this should return the Django
-        model.
-        By default, raises NoModelError.
-        Override this to return a class that works with
-        ``.get_object()`` to return the instance of the model that is
-        related to this document.
-        """
-        raise NoModelError
-    # Simulate attribute access
-
-    def __getattr__(self, name):
-        if name in self.__dict__:
-        # We want instance/class attributes to take precedence.
-        # So if something like that exists, we raise an
-        # AttributeError and Python handles it.
-            raise AttributeError(name)
-        if name == 'object':
-        # 'object' is lazy-loading. We don't do this with a
-        # property because Python sucks at properties and
-        # subclasses.
-            return self.get_object()
-        # If that doesn't exist, then check the results_dict.
-        if name in self._results_dict:
-            return self._results_dict[name]
-        raise AttributeError(name)
-    # Simulate read-only container access
-
-    def __len__(self):
-        return self._results_dict.__len__()
-
-    def __getitem__(self, key):
-        return self._results_dict.__getitem__(key)
-
-    def __iter__(self):
-        return self._results_dict.__iter__()
-
-    def __reversed__(self):
-        return self._results_dict.__reversed__()
-
-    def __contains__(self, item):
-        return self._results_dict.__contains__(item)
-
 class ModelIndex(object):
     '''
     Introspects a model to generate an indexable mapping and methods to extract objects.
@@ -138,9 +36,13 @@ class ModelIndex(object):
         excludes = getattr(_meta, 'exclude', [])
         hotfixes = getattr(_meta, 'hotfixes', {})
         additional_fields = getattr(_meta, 'additional_fields', [])
+        id_field = getattr(_meta, 'id_field', 'id')
 
         # Add in fields from the model.
         self.fields.update(self._get_fields(fields, excludes, hotfixes))
+        # Elasticsearch uses '_id' to identify items uniquely, so let's duplicate that field.
+        # We're duplicating it in order for devs to still perform searches on `.id` as expected.
+        self.fields['_id'] = self.fields[id_field]
         self.fields_to_fetch = list(set(self.fields.keys()).union(additional_fields))
 
         # Adding or updating the fields which are defined at class level.

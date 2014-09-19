@@ -12,17 +12,22 @@ from time import sleep
 class ModelIndexTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
+        # Let's start by creating the index and mapping.
+        # If we create an object before the index, the index 
+        # will be created automatically, and we want to test the command.
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        
         art_1 = {'title': 'Title one',
-                     'description': 'Description of article 1.',
-                     'link': 'http://example.com/article_1',
-                     'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
-                     'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
-                     'tweet_count': 20,
-                     'source_hash': 159159159159,
-                     'missing_data': '',
-                     'positive_feedback': 50,
-                     'negative_feedback': 5,
-                     }
+                 'description': 'Description of article 1.',
+                 'link': 'http://example.com/article_1',
+                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+                 'tweet_count': 20,
+                 'source_hash': 159159159159,
+                 'missing_data': '',
+                 'positive_feedback': 50,
+                 'negative_feedback': 5,
+                 }
         Article.objects.create(**art_1)
 
         art_2 = dict((k, v) for k, v in art_1.iteritems())
@@ -33,7 +38,6 @@ class ModelIndexTestCase(TestCase):
         Article.objects.create(**art_2)
 
         # Let's now create the index.
-        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
         print "Sleeping two seconds for Elasticsearch to index."
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
@@ -56,6 +60,7 @@ class ModelIndexTestCase(TestCase):
                                    'effectived_date': {'type': 'date'},
                                    'tweet_count': {'type': 'integer'},
                                    'id': {'type': 'integer'},
+                                   '_id': {'type': 'integer'}, # This is the elastic search index.
                                    'published': {'type': 'date'}}
                     }
         self.assertEqual(ArticleIndex().get_mapping(), expected, 'Got an unexpected mapping.')
@@ -103,6 +108,24 @@ class ModelIndexTestCase(TestCase):
         Check model mapping.
         '''
         self.assertEqual(ArticleIndex().get_model(), Article, 'Model was not Article.')
+
+    def test_post_save(self):
+        art = {'title': 'Title three',
+                 'description': 'Postsave',
+                 'link': 'http://example.com/sparrho',
+                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+                 'tweet_count': 20,
+                 'source_hash': 159159159159,
+                 'missing_data': '',
+                 'positive_feedback': 50,
+                 'negative_feedback': 5,
+                 }
+        Article.objects.create(**art)
+        print "Sleeping two seconds for Elasticsearch to index new item."
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
+        find_three = len(Article.objects.search.query('match', title='three'))
+        self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
 
     def test_serialize_object(self):
         expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),

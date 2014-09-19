@@ -25,5 +25,6 @@ MIDDLEWARE_CLASSES = ()
 DEFAULT_INDEX_TABLESPACE = ''
 BUNGIESEARCH = {
                 'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
-                'INDICES': {'bungiesearch_demo': 'core.search_indices'}
+                'INDICES': {'bungiesearch_demo': 'core.search_indices'},
+                'SIGNALS': {'BUFFER_SIZE': 1}
                 }
