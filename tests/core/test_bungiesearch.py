@@ -116,10 +116,18 @@ class ModelIndexTestCase(TestCase):
         inst = Article.objects.search.query('match', _all='Description')
         self.assertIsInstance(inst.only('_id'), inst.__class__, 'Calling `only` does not return a clone of itself.')
 
-    def test_search_alias(self):
+    def test_search_alias_exceptions(self):
+        '''
+        Tests that invalid aliases raise exceptions.
+        '''
+        self.assertRaises(AttributeError, getattr, Article.objects, 'no_such_alias')
+        self.assertRaises(NotImplementedError, Article.objects.invalidalias)
+
+    def test_search_aliases(self):
         '''
         Tests search alias errors and functionality.
         '''
+        import pdb;pdb.set_trace()
         title_alias = Article.objects.title_search('title')
         db_items = list(Article.objects.all())
         self.assertEqual(title_alias.to_dict(), {'query': {'match': {'title': 'title'}}}, 'Title alias search did not return the expected JSON query.')
@@ -127,7 +135,6 @@ class ModelIndexTestCase(TestCase):
         self.assertTrue(all([result in db_items for result in title_alias[:]]), 'Alias searching for title "title" did not return all articles when using empty slice.')
         self.assertEqual(len(title_alias[:1]), 1, 'Get item on an alias search with start=None and stop=1 did not return one item.')
         self.assertEqual(len(title_alias[:2]), 2, 'Get item on an alias search with start=None and stop=2 did not return two item.')
-        self.assertRaises(AttributeError, Article.objects.invalid_alias)
 
     def test_post_save(self):
         art = {'title': 'Title three',
