@@ -105,9 +105,16 @@ class ModelIndexTestCase(TestCase):
 
     def test_get_model(self):
         '''
-        Check model mapping.
+        Test model mapping.
         '''
         self.assertEqual(ArticleIndex().get_model(), Article, 'Model was not Article.')
+
+    def test_cloning(self):
+        '''
+        Test that Bungiesearch remains lazy with specific function which should return clones.
+        '''
+        inst = Article.objects.search.query('match', _all='Description')
+        self.assertIsInstance(inst.only('_id'), inst.__class__, 'Calling `only` does not return a clone of itself.')
 
     def test_post_save(self):
         art = {'title': 'Title three',
