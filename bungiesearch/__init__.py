@@ -234,10 +234,12 @@ class Bungiesearch(Search):
         '''
         Restricts the fields to be fetched when mapping. Set to `__model` to fetch all fields define in the ModelIndex.
         '''
+        s = self._clone()
         if len(fields) == 1 and fields[0] == '__model':
-            self._only = '__model'
+            s._only = '__model'
         else:
-            self._only = fields
+            s._only = fields
+        return s
 
     def __iter__(self):
         '''
