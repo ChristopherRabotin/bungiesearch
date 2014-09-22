@@ -61,7 +61,7 @@ class Bungiesearch(Search):
                 try:
                     if issubclass(alias_obj, SearchAlias) and alias_obj != SearchAlias:
                         alias_instance = alias_obj()
-                        cls._alias_hooks[alias_prefix + '_' + alias_instance._alias_name] = alias_instance
+                        cls._alias_hooks[alias_prefix + '_' + alias_instance.alias_name] = alias_instance
                 except TypeError:
                     pass # Oops, just attempted to get subclasses of a non-class.
 
