@@ -56,7 +56,7 @@ class ModelIndexTestCase(TestCase):
                                    'authors': {'type': 'string', 'analyzer': 'snowball'},
                                    'meta_data': {'type': 'string', 'analyzer': 'snowball'},
                                    'link': {'type': 'string', 'analyzer': 'snowball'},
-                                   'effectived_date': {'type': 'date'},
+                                   'effective_date': {'type': 'date'},
                                    'tweet_count': {'type': 'integer'},
                                    'id': {'type': 'integer'},
                                    '_id': {'type': 'integer'}, # This is the elastic search index.
@@ -153,6 +153,8 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
         # Let's now delete this object to test the post delete signal.
         obj.delete()
+        print "Sleeping two seconds for Elasticsearch to update its index after deleting an item."
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     def test_serialize_object(self):
         expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
