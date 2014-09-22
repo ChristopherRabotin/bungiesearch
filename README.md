@@ -1,21 +1,20 @@
 # Purpose
 Bungiesearch is a Django wrapper for [elasticsearch-dsl-py](https://github.com/elasticsearch/elasticsearch-dsl-py).
 It inherits from elasticsearch-dsl-py's `Search` class, so all the fabulous features developed by the elasticsearch-dsl-py team are also available in Bungiesearch.
-In addition, just like `Search`, Bungiesearch is a lazy searching class, meaning you can call functions in a row, or do something like the following.
+In addition, just like `Search`, Bungiesearch is a lazy searching class (and iterable), meaning you can call functions in a row, or do something like the following.
 
 ```python
 lazy = Article.objects.search.query('match', _all='Description')
-print len(lazy) # Prints the number of hits.
+print len(lazy) # Prints the number of hits by only fetching the number of items.
 for item in lazy[5:10]:
     print item
 ```
 
 # Features
 * Core Python friendly
-	* Iteration (`[x for x in lazy_search])
+	* Iteration (`[x for x in lazy_search]`)
 	* Get items (`lazy_search[10]`)
 	* Number of hits via `len` (`len(lazy_search)`)
-
 * Index management
 	* Creating and deleting an index.
 	* Creating, updating and deleting doctypes and their mappings.
@@ -30,7 +29,7 @@ for item in lazy[5:10]:
 	* Easy model integration: `MyModel.search.query("match", _all="something to search")`.
 	* Search aliases (search shortcuts with as many parameters as wanted): `Tweet.object.bungie_title_search("bungie")` or `Article.object.bungie_title_search("bungie")`, where `bungie_title_search` is uniquely defined.
 * Django signals
-	* Connect to post save and pre delete signals for the elasticsearch index to correctly reflect the database.
+	* Connect to post save and pre delete signals for the elasticsearch index to correctly reflect the database (almost) at all times.
 
 ## Feature examples
 See section "Full example" at the bottom of page to see the code needed to perform these following examples.
@@ -53,19 +52,12 @@ for result in Article.objects.search.query('match', _all='Description'):
 ### Fetch a single item
 
 ```python
-`Article.objects.search.query('match', _all='Description')[0]`
+Article.objects.search.query('match', _all='Description')[0]
 ```
 
 ### Get the number of returned items
 ```python
-`print len(Article.objects.search.query('match', _all='Description'))`
-```
-
-### Get a specific number of items with an offset.
-This is actually elasticseach-dsl-py functionality, but it's demonstrated here because we can iterate over the results via Bungiesearch.
-```python
-for item in Article.objects.bsearch_title_search('title').only('pk').fields('_id')[5:7]:
-    print item
+print len(Article.objects.search.query('match', _all='Description'))
 ```
 
 ### Deferred model instantiation
@@ -80,6 +72,13 @@ for result in Article.objects.search.query('match', _all='Description').only('pk
 # Will print the Django model instance. However, elasticsearch's response only has the `_id` field.
 for result in Article.objects.search.query('match', _all='Description').fields('_id'):
     print result
+```
+
+### Get a specific number of items with an offset.
+This is actually elasticseach-dsl-py functionality, but it's demonstrated here because we can iterate over the results via Bungiesearch.
+```python
+for item in Article.objects.bsearch_title_search('title').only('pk').fields('_id')[5:7]:
+    print item
 ```
 
 ### Lazy objects
