@@ -22,10 +22,11 @@ class SearchAlias(object):
         try:
             _meta = getattr(self, 'Meta')
         except AttributeError:
-            raise AttributeError('SearchAlias {} does not contain a Meta class.'.format(self._classname))
-
-        self._applicable_models = getattr(_meta, 'models', None)
-        self.alias_name = getattr(_meta, 'alias_name', self._classname.lower())
+            self._applicable_models = []
+            self.alias_name = self._classname.lower()
+        else:
+            self._applicable_models = getattr(_meta, 'models', None)
+            self.alias_name = getattr(_meta, 'alias_name', self._classname.lower())
         self.search_instance = None
         self.model = None
 

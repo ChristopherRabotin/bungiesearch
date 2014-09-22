@@ -10,6 +10,10 @@ class SearchTitle(SearchAlias):
         models = (Article,)
         alias_name = 'title_search'
 
+class Title(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.query('match', title=title)
+
 class InvalidAlias(SearchAlias):
     def alias_for_does_not_exist(self, title):
         return title

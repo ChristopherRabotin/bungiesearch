@@ -122,24 +122,24 @@ some_field_name = StringField(eval_as='",".join([item for item in obj.some_forei
 ### Meta subclass attributes
 **Note**: in the following, any variable defined a being a `list` could also be a `tuple`.
 ##### model
-Required: defines the Django model for which this ModelIndex is applicable.
+*Required:* defines the Django model for which this ModelIndex is applicable.
 
 ##### fields
-Optional: list of fields (or columns) which must be fetched when serializing the object for elasticsearch, or when reverse mapping the object from elasticsearch back to a Django Model instance.
+*Optional:* list of fields (or columns) which must be fetched when serializing the object for elasticsearch, or when reverse mapping the object from elasticsearch back to a Django Model instance.
 By default, all fields will be fetched. Setting this *will* restrict which fields can be fetched and may lead to errors when serializing the object. It is recommended to use the `exclude` attribute instead (cf. below).
 
 ##### exclude
-Optional: list of fields (or columns) which must not be fetched when serializing or deserializing the object.
+*Optional:* list of fields (or columns) which must not be fetched when serializing or deserializing the object.
 
 ##### hotfixes
-Optional: a dictionary whose keys are index fields and whose values are dictionaries which define [core type attributes](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-core-types.html).
+*Optional:* a dictionary whose keys are index fields and whose values are dictionaries which define [core type attributes](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-core-types.html).
 By default, there aren't any special settings, apart for String fields, where the [analyzer](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-analyzers.html) is set to [`snowball`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-snowball-analyzer.html) (`{'analyzer': 'snowball'}`).
 
 ##### additional_fields
-Optional: additional fields to fetch for mapping, may it be for `eval_as` fields or when returning the object from the database.
+*Optional:* additional fields to fetch for mapping, may it be for `eval_as` fields or when returning the object from the database.
 
 ##### id_field
-Optional: the model field to use as a unique ID for elasticsearch's metadata `_id`. Defaults to `id` (also called [`pk`](https://docs.djangoproject.com/en/dev/topics/db/models/#automatic-primary-key-fields)).
+*Optional:* the model field to use as a unique ID for elasticsearch's metadata `_id`. Defaults to `id` (also called [`pk`](https://docs.djangoproject.com/en/dev/topics/db/models/#automatic-primary-key-fields)).
 
 #### Example
 ```python
@@ -159,6 +159,69 @@ class ArticleIndex(ModelIndex):
                     'full_text': {'boost': 1.125}}
 
 ```
+## SearchAlias
+A `SearchAlias` define search shortcuts (somewhat similar to [Django managers](https://docs.djangoproject.com/en/dev/topics/db/managers/)). Often times, a given search will be used in multiple parts of the code. SearchAliases allow you define those queries, filters, or any bungiesearch/elasticsearch-dsl-py calls as an alias.
+
+A search alias is either applicable to a `list` (or `tuple`) of managed models, or to all managed models. It's very simple, so here's an example which is detailed right below.
+
+### Example
+
+The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title`, supposing that no custom search alias prefix is defined in the settings (cf. below).
+
+#### Definition
+```python
+from bungiesearch.aliases import SearchAlias
+
+class Title(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.query('match', title=title)
+```
+
+#### Usage
+```python
+Article.objects.bungie_title('title')
+```
+
+### Method overwrite
+Any implementation needs to inherit from `bungiesearch.aliases.SearchAlias` and overwrite `alias_for`. You can set as many or as little parameters as you want for that function (since bungiesearch only return the pointer to that function
+without actually calling it).
+
+Since each managed model has its own doc type, `self.search_instance` is a bungiesearch instance set to search the specific doctype.
+
+### Meta subclass attributes
+Although not mandatory, the `Meta` subclass enabled custom naming and model restrictions for a search alias.
+
+##### models
+*Optional:* `list` (or `tuple`) of Django models which are allowed to use this search alias. If a model which is not allowed to use this SearchAlias tries it, a `ValueError` will be raised.
+
+##### alias_name
+*Optional:* A string corresponding the suffix name of this search alias. Defaults to the lower case class name.
+
+**WARNING**: by default, as explained in the "Settings" section below, all search aliases share a prefix. This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
+In other words, if you define the `alias_name` to `test`, then it must be called as `model_obj.objects.$prefix$_test` where `$prefix$` is the prefix defined in the settings. 
+
+#### Sophisticated example
+This example shows that we can have some fun with search aliases. In this case, we define a Range alias which is applicable to any field on any model.
+
+```python
+class Range(SearchAlias):
+    def alias_for(self, field, gte=None, lte=None, boost=None, as_query=False):
+        body = {field: {}}
+        if gte:
+            body[field]['gte'] = gte
+        if lte:
+            body[field]['lte'] = lte
+        if boost:
+            if not as_query:
+                logging.warning('Boost is not applicable to search alias Range when not used as a query.')
+            else:
+                body[field]['boost'] = boost
+        if as_query:
+            return self.search_instance.query({'range': body})
+        return self.search_instance.filter({'range': body})
+```
+
+We can use it as such `Article.objects.bungie_range(field='created', gte='2014-05-20', as_query=True)`.
 
 ## Settings
 You must defined `BUNGIESEARCH` in your Django settings in order for bungiesearch to know elasticsearch URL(s) and which index name contains mappings for each ModelIndex.
@@ -175,32 +238,32 @@ BUNGIESEARCH = {
 ```
 
 ### URLS
-Required: must be a list of URLs which host elasticsearch instance(s). This is directly sent to elasticsearch-dsl-py, so any issue with multiple URLs should be refered to them.
+*Required:* must be a list of URLs which host elasticsearch instance(s). This is directly sent to elasticsearch-dsl-py, so any issue with multiple URLs should be refered to them.
 
 ### INDICES
-Required: must be a dictionary where each key is the name of an elasticsearch index and each value is a path to a Python module containing classes which inherit from `bungiesearch.indices.ModelIndex` (cf. below).
+*Required:* must be a dictionary where each key is the name of an elasticsearch index and each value is a path to a Python module containing classes which inherit from `bungiesearch.indices.ModelIndex` (cf. below).
 
 ### ALIASES
-Optional: list of Python modules containing classes which inherit from `bungiesearch.aliases.SearchAlias`.
+*Optional:* list of Python modules containing classes which inherit from `bungiesearch.aliases.SearchAlias`.
 
 ### ALIAS_PREFIX
-Optional: allows you to define the prefix used for search aliases. Defaults to `bungie_`. Set to an empty string to not have any alias at all.
+*Optional:* allows you to define the prefix used for search aliases. Defaults to `bungie_`. Set to an empty string to not have any alias at all.
 
 For example, if a search alias is called `title_search`, then it is accessed via `model_obj.objects.bungie_title_search`. The purpose is to not accidently overwrite Django's default manager functions with search aliases.
 
 ### SIGNALS
-Optional: if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager.
+*Optional:* if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager.
 
 If `SIGNALS` is not defined in the settings, *none* of the models managed by BungiesearchManager will automatically update the index when a new item is created or deleted.
 
 #### BUFFER_SIZE
-Optional: an integer representing the number of items to buffer before making a bulk index update, defaults to `100`.
+*Optional:* an integer representing the number of items to buffer before making a bulk index update, defaults to `100`.
 
 **WARNING**: if your application is shut down before the buffer is emptied, then any buffered instance *will not* be indexed on elasticsearch.
 Hence, a possibly better implementation is wrapping `post_save_connector` and `pre_delete_connector` from `bungiesearch.signals` in a celery task. It is not implemented as such here in order to not require `celery`.
 
 ### TIMEOUT
-Optional: Elasticsearch connection timeout in seconds. Defaults to `5`.
+*Optional:* Elasticsearch connection timeout in seconds. Defaults to `5`.
 
 # Backend code example
 This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
