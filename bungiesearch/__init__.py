@@ -146,7 +146,7 @@ class Bungiesearch(Search):
         '''
         try:
             search_alias = cls._alias_hooks[alias]
-            if model_obj not in search_alias._applicable_models:
+            if search_alias._applicable_models and model_obj not in search_alias._applicable_models:
                 raise ValueError('Search alias {} is not applicable to model {}.'.format(alias, model_obj))
             return search_alias.prepare(search_instance, model_obj).alias_for
         except KeyError:
