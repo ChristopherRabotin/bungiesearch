@@ -25,7 +25,7 @@ class SearchAlias(object):
             raise AttributeError('SearchAlias {} does not contain a Meta class.'.format(self._classname))
 
         self._applicable_models = getattr(_meta, 'models', None)
-        self._alias_name = getattr(_meta, '_alias_name', self._classname.lower())
+        self.alias_name = getattr(_meta, 'alias_name', self._classname.lower())
         self.search_instance = None
         self.model = None
 
@@ -33,7 +33,7 @@ class SearchAlias(object):
         s = self.__class__()
         s._classname = self._classname
         s._applicable_models = self._applicable_models
-        s._alias_name = self._alias_name
+        s.alias_name = self.alias_name
         return s
 
     def prepare(self, search_instance, model_obj):

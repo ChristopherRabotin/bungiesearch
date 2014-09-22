@@ -273,7 +273,7 @@ class SearchTitle(SearchAlias):
 
     class Meta:
         models = (Article,)
-        _alias_name = 'title_search'
+        alias_name = 'title_search' # This is optional. If none is provided, the name will be the class name in lower case.
 
 class InvalidAlias(SearchAlias):
     def alias_for_does_not_exist(self, title):
