@@ -1,5 +1,5 @@
 Django==1.7
-bungiesearch==0.0.1
+bungiesearch
 cov-core==1.14.0
 coverage==3.7.1
 elasticsearch==1.2.0
