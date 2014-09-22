@@ -54,13 +54,14 @@ class Bungiesearch(Search):
                 cls._model_name_to_index[model.__name__] = index_name
 
         # Loading aliases.
+        alias_prefix = cls.BUNGIE.get('ALIAS_PREFIX', 'bungie')
         for module_str in cls.BUNGIE.get('ALIASES', []):
             alias_module = import_module(module_str)
             for alias_obj in alias_module.__dict__.itervalues():
                 try:
                     if issubclass(alias_obj, SearchAlias) and alias_obj != SearchAlias:
                         alias_instance = alias_obj()
-                        cls._alias_hooks[alias_instance._alias_name] = alias_instance
+                        cls._alias_hooks[alias_prefix + '_' + alias_instance._alias_name] = alias_instance
                 except TypeError:
                     pass # Oops, just attempted to get subclasses of a non-class.
 

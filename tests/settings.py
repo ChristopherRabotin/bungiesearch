@@ -27,5 +27,6 @@ BUNGIESEARCH = {
                 'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
                 'INDICES': {'bungiesearch_demo': 'core.search_indices'},
                 'ALIASES': ['core.search_aliases'],
+                'ALIAS_PREFIX': 'bsearch',
                 'SIGNALS': {'BUFFER_SIZE': 1}
                 }

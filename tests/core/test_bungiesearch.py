@@ -119,15 +119,14 @@ class ModelIndexTestCase(TestCase):
         '''
         Tests that invalid aliases raise exceptions.
         '''
-        self.assertRaises(AttributeError, getattr, Article.objects, 'no_such_alias')
-        self.assertRaises(NotImplementedError, Article.objects.invalidalias)
+        self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
+        self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
 
     def test_search_aliases(self):
         '''
         Tests search alias errors and functionality.
         '''
-        import pdb;pdb.set_trace()
-        title_alias = Article.objects.title_search('title')
+        title_alias = Article.objects.bsearch_title_search('title')
         db_items = list(Article.objects.all())
         self.assertEqual(title_alias.to_dict(), {'query': {'match': {'title': 'title'}}}, 'Title alias search did not return the expected JSON query.')
         self.assertTrue(all([result in db_items for result in title_alias]), 'Alias searching for title "title" did not return all articles.')
