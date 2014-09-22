@@ -159,6 +159,41 @@ class ArticleIndex(ModelIndex):
                     'full_text': {'boost': 1.125}}
 
 ```
+HERE !!!! #######
+## SearchAlias
+A `SearchAlias` define search shortcuts. Often times, a given search will be used in multiple parts of the code. SearchAliases allow you define those queries, filters, or any bungiesearch/elasticsearch-dsl-py calls as an alias.
+
+A search alias is either applicable to a `list` (or `tuple`) of managed models, or to all managed models. It's very simple, so here's an example which is detailed right below.
+
+### Example
+
+The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title`, supposing that no custom search alias prefix is defined in the setting (cf. below).
+
+```python
+from bungiesearch.aliases import SearchAlias
+
+class Title(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.query('match', title=title)
+```
+
+### Method overwrite
+Any implementation needs to inherit from `bungiesearch.aliases.SearchAlias` and overwrite `alias_for`. You can set as many or as little parameters as you want for that function (since bungiesearch only return the pointer to that function
+without actually calling it).
+
+Since each managed model has its own doc type, `self.search_instance` is a bungiesearch instance set to search the specific doctype.
+
+### Meta subclass attributes
+Although not mandatory, the `Meta` subclass enabled custom naming and model restrictions for a search alias.
+
+##### models
+Optional: list of Django models which are allowed to use this search alias. If a model which is not allowed to use this SearchAlias tries it, a `ValueError` will be raised.
+
+##### alias_name
+Optional: A string corresponding the suffix name of this search alias. Defaults to the lower case class name.
+
+**WARNING**: by default, as explained in the "Settings" section below, all search aliases share a prefix. This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
+In other words, if you define the `alias_name` to `test`, then it must be called as `model_obj.objects.$prefix$_test` where `$prefix$` is the prefix defined in the settings. 
 
 ## Settings
 You must defined `BUNGIESEARCH` in your Django settings in order for bungiesearch to know elasticsearch URL(s) and which index name contains mappings for each ModelIndex.
