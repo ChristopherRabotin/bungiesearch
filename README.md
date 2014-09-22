@@ -141,6 +141,25 @@ Optional: additional fields to fetch for mapping, may it be for `eval_as` fields
 ##### id_field
 Optional: the model field to use as a unique ID for elasticsearch's metadata `_id`. Defaults to `id` (also called [`pk`](https://docs.djangoproject.com/en/dev/topics/db/models/#automatic-primary-key-fields)).
 
+#### Example
+```python
+from core.models import Article
+from bungiesearch.indices import ModelIndex
+
+
+class ArticleIndex(ModelIndex):
+
+    class Meta:
+        model = Article
+        id_field = 'id' # That's actually the default value, so it's not really needed.
+        exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
+        hotfixes = {'updated': {'null_value': '2013-07-01'},
+                    'title': {'boost': 1.75},
+                    'description': {'boost': 1.35},
+                    'full_text': {'boost': 1.125}}
+
+```
+
 ## Settings
 You must defined `BUNGIESEARCH` in your Django settings in order for bungiesearch to know elasticsearch URL(s) and which index name contains mappings for each ModelIndex.
 
