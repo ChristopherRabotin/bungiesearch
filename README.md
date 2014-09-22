@@ -1,8 +1,20 @@
 # Purpose
 Bungiesearch is a Django wrapper for [elasticsearch-dsl-py](https://github.com/elasticsearch/elasticsearch-dsl-py).
 It inherits from elasticsearch-dsl-py's `Search` class, so all the fabulous features developed by the elasticsearch-dsl-py team are also available in Bungiesearch.
+In addition, just like `Search`, Bungiesearch is a lazy searching class, meaning you can call functions in a row, or do something like the following.
+
+```python
+lazy = Article.objects.search.query('match', _all='Description')
+print len(lazy) # Prints the number of hits.
+for item in lazy[5:10]:
+    print item
+```
 
 # Features
+* Core Python friendly
+	* Iteration (`[x for x in lazy_search])
+	* Get items (`lazy_search[10]`)
+	* Number of hits via `len` (`len(lazy_search)`)
 
 * Index management
 	* Creating and deleting an index.
@@ -20,6 +32,64 @@ It inherits from elasticsearch-dsl-py's `Search` class, so all the fabulous feat
 * Django signals
 	* Connect to post save and pre delete signals for the elasticsearch index to correctly reflect the database.
 
+## Feature examples
+See section "Full example" at the bottom of page to see the code needed to perform these following examples.
+### Query a word (or list thereof) on a managed model.
+
+`Article.objects.search.query('match', _all='Description')`
+
+### Use a search alias.
+
+`Article.objects.bsearch_title_search('title')`
+
+### Iterate over search results
+
+```python
+# Will print the Django model instance.
+for result in Article.objects.search.query('match', _all='Description'):
+    print result
+```
+
+### Fetch a single item
+
+```python
+`Article.objects.search.query('match', _all='Description')[0]`
+```
+
+### Get the number of returned items
+```python
+`print len(Article.objects.search.query('match', _all='Description'))`
+```
+
+### Get a specific number of items with an offset.
+This is actually elasticseach-dsl-py functionality, but it's demonstrated here because we can iterate over the results via Bungiesearch.
+```python
+for item in Article.objects.bsearch_title_search('title').only('pk').fields('_id')[5:7]:
+    print item
+```
+
+### Deferred model instantiation
+```python
+# Will print the Django model instance's primary key. Will only fetch the `pk` field from the database.
+for result in Article.objects.search.query('match', _all='Description').only('pk'):
+    print result.pk
+```
+
+### Elasticsearch limited field fetching
+```python
+# Will print the Django model instance. However, elasticsearch's response only has the `_id` field.
+for result in Article.objects.search.query('match', _all='Description').fields('_id'):
+    print result
+```
+
+### Lazy objects
+```python
+lazy = Article.objects.bsearch_title_search('title')
+print len(lazy)
+for item in lazy.filter('range', effective_date={'lte': '2014-09-22'}):
+    print item
+
+```
 # Documentation
 
 ## ModelIndex
@@ -51,7 +121,7 @@ some_field_name = StringField(eval_as='",".join([item for item in obj.some_forei
 ```
 
 ### Meta subclass attributes
-*Note*: in the following, any variable defined a being a `list` could also be a `tuple`.
+**Note**: in the following, any variable defined a being a `list` could also be a `tuple`.
 ##### model
 Required: defines the Django model for which this ModelIndex is applicable.
 
@@ -64,7 +134,7 @@ Optional: list of fields (or columns) which must not be fetched when serializing
 
 ##### hotfixes
 Optional: a dictionary whose keys are index fields and whose values are dictionaries which define [core type attributes](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-core-types.html).
-By default, there aren't any special settings, apart for String fields, where the [analyzer](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-analyzers.html) is set to [`snowball`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-snowball-analyzer.html) ({'analyzer': 'snowball'}).
+By default, there aren't any special settings, apart for String fields, where the [analyzer](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-analyzers.html) is set to [`snowball`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/analysis-snowball-analyzer.html) (`{'analyzer': 'snowball'}`).
 
 ##### additional_fields
 Optional: additional fields to fetch for mapping, may it be for `eval_as` fields or when returning the object from the database.
@@ -87,7 +157,7 @@ BUNGIESEARCH = {
 ```
 
 ### URLS
-Required: must be a list of URLs which host elasticsearch instance(s).
+Required: must be a list of URLs which host elasticsearch instance(s). This is directly sent to elasticsearch-dsl-py, so any issue with multiple URLs should be refered to them.
 
 ### INDICES
 Required: must be a dictionary where each key is the name of an elasticsearch index and each value is a path to a Python module containing classes which inherit from `bungiesearch.indices.ModelIndex` (cf. below).
@@ -97,54 +167,28 @@ Optional: list of Python modules containing classes which inherit from `bungiese
 
 ### ALIAS_PREFIX
 Optional: allows you to define the prefix used for search aliases. Defaults to `bungie_`. Set to an empty string to not have any alias at all.
+
 For example, if a search alias is called `title_search`, then it is accessed via `model_obj.objects.bungie_title_search`. The purpose is to not accidently overwrite Django's default manager functions with search aliases.
 
 ### SIGNALS
 Optional: if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager.
+
 If `SIGNALS` is not defined in the settings, *none* of the models managed by BungiesearchManager will automatically update the index when a new item is created or deleted.
 
 #### BUFFER_SIZE
 Optional: an integer representing the number of items to buffer before making a bulk index update, defaults to `100`.
 
-*WARNING*: if your application is shut down before the buffer is emptied, then any buffered instance *will not* be indexed on elasticsearch.
+**WARNING**: if your application is shut down before the buffer is emptied, then any buffered instance *will not* be indexed on elasticsearch.
 Hence, a possibly better implementation is wrapping `post_save_connector` and `pre_delete_connector` from `bungiesearch.signals` in a celery task. It is not implemented as such here in order to not require `celery`.
 
 ### TIMEOUT
 Optional: Elasticsearch connection timeout in seconds. Defaults to `5`.
 
-# Full example
-This example is from the `test` folder. It may be partially outdated, so please refer to the `test` folder for the latest version.
-## Feature examples
-### Query a word (or list thereof) on a managed model.
+# Backend code example
+This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
 
-`Article.objects.search.query('match', _all='Description')[0]`
-
-### Use a search alias.
-
-`Article.objects.bsearch_title_search('title')`
-
-### Iterate over search results
-
-```python
-for result in Article.objects.search.query('match', _all='Description'):
-    print result # Will print the Django model instance.
-```
-
-### Deferred model instantiation
-```python
-for result in Article.objects.search.query('match', _all='Description').only('pk'):
-    print result.pk # Will print the Django model instance's primary key. Will only fetch the `pk` field from the database.
-```
-
-### Elasticsearch limited field fetching
-```python
-for result in Article.objects.search.query('match', _all='Description').fields('_id'):
-    print result # Will print the Django model instance. However, elasticsearch's response only has the `_id` field.
-```
-
-## Backend code
+Here's the code which is applicable to the previous examples.
 ### Django Model
-Here's the model we'll use throughout this example.
 
 ```python
 from django.db import models
