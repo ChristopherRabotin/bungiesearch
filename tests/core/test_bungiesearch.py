@@ -37,7 +37,6 @@ class ModelIndexTestCase(TestCase):
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
         Article.objects.create(**art_2)
 
-        # Let's now create the index.
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
         print "Sleeping two seconds for Elasticsearch to index."
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
@@ -148,11 +147,13 @@ class ModelIndexTestCase(TestCase):
                  'positive_feedback': 50,
                  'negative_feedback': 5,
                  }
-        Article.objects.create(**art)
+        obj = Article.objects.create(**art)
         print "Sleeping two seconds for Elasticsearch to index new item."
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_three = len(Article.objects.search.query('match', title='three'))
         self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
+        # Let's now delete this object to test the post delete signal.
+        obj.delete()
 
     def test_serialize_object(self):
         expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),

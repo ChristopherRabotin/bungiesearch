@@ -21,10 +21,11 @@ class BungiesearchManager(Manager):
         super(BungiesearchManager, self).__init__(**kwargs)
 
         from . import Bungiesearch
-        from .signals import post_save_connector
+        from .signals import post_save_connector, pre_delete_connector
         settings = Bungiesearch.BUNGIE
         if 'SIGNALS' in settings:
             signals.post_save.connect(post_save_connector, sender=self.model)
+            signals.pre_delete.connect(pre_delete_connector, sender=self.model)
 
     def __getattr__(self, alias):
         '''

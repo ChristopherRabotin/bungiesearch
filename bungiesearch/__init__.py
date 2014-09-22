@@ -143,7 +143,6 @@ class Bungiesearch(Search):
         '''
         Returns the alias function, if it exists and if it can be applied to this model.
         '''
-        print cls._alias_hooks
         try:
             search_alias = cls._alias_hooks[alias]
             if model_obj not in search_alias._applicable_models:
@@ -293,7 +292,6 @@ class Bungiesearch(Search):
                 self._raw_results_only = key.step
                 key.step = None
                 single_item = key.start - key.stop == -1
-                print key.start, key.stop, key.step
             else:
                 single_item = False
         else:
