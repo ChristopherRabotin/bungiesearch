@@ -1,6 +1,3 @@
-'''
-This bit of code is mostly a mix between haystack and elasticutils.
-'''
 import logging
 
 from bungiesearch.fields import AbstractField, django_field_to_index

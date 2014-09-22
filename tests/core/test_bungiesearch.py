@@ -37,7 +37,6 @@ class ModelIndexTestCase(TestCase):
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
         Article.objects.create(**art_2)
 
-        # Let's now create the index.
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
         print "Sleeping two seconds for Elasticsearch to index."
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
@@ -111,10 +110,29 @@ class ModelIndexTestCase(TestCase):
 
     def test_cloning(self):
         '''
-        Test that Bungiesearch remains lazy with specific function which should return clones.
+        Tests that Bungiesearch remains lazy with specific function which should return clones.
         '''
         inst = Article.objects.search.query('match', _all='Description')
         self.assertIsInstance(inst.only('_id'), inst.__class__, 'Calling `only` does not return a clone of itself.')
+
+    def test_search_alias_exceptions(self):
+        '''
+        Tests that invalid aliases raise exceptions.
+        '''
+        self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
+        self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
+
+    def test_search_aliases(self):
+        '''
+        Tests search alias errors and functionality.
+        '''
+        title_alias = Article.objects.bsearch_title_search('title')
+        db_items = list(Article.objects.all())
+        self.assertEqual(title_alias.to_dict(), {'query': {'match': {'title': 'title'}}}, 'Title alias search did not return the expected JSON query.')
+        self.assertTrue(all([result in db_items for result in title_alias]), 'Alias searching for title "title" did not return all articles.')
+        self.assertTrue(all([result in db_items for result in title_alias[:]]), 'Alias searching for title "title" did not return all articles when using empty slice.')
+        self.assertEqual(len(title_alias[:1]), 1, 'Get item on an alias search with start=None and stop=1 did not return one item.')
+        self.assertEqual(len(title_alias[:2]), 2, 'Get item on an alias search with start=None and stop=2 did not return two item.')
 
     def test_post_save(self):
         art = {'title': 'Title three',
@@ -128,11 +146,13 @@ class ModelIndexTestCase(TestCase):
                  'positive_feedback': 50,
                  'negative_feedback': 5,
                  }
-        Article.objects.create(**art)
+        obj = Article.objects.create(**art)
         print "Sleeping two seconds for Elasticsearch to index new item."
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_three = len(Article.objects.search.query('match', title='three'))
         self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
+        # Let's now delete this object to test the post delete signal.
+        obj.delete()
 
     def test_serialize_object(self):
         expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),

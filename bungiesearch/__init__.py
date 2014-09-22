@@ -4,6 +4,7 @@ from importlib import import_module
 import logging
 
 from bungiesearch.indices import ModelIndex
+from bungiesearch.aliases import SearchAlias
 import bungiesearch.managers
 from django.conf import settings
 from elasticsearch.client import Elasticsearch
@@ -23,17 +24,19 @@ class Bungiesearch(Search):
 
     _cached_es_instances = {}
     # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
-    _index_to_model_idx, _index_to_model, _model_name_to_model_idx = defaultdict(list), defaultdict(list), {}
-    _model_to_index, _model_name_to_index = {}, {}
+    _index_to_model_idx, _index_to_model = defaultdict(list), defaultdict(list)
+    _model_to_index, _model_name_to_index, _model_name_to_model_idx, _alias_hooks = {}, {}, {}, {}
     __loaded_indices__ = False
 
     @classmethod
-    def __load_indices__(cls):
+    def __load_settings__(cls):
         if cls.__loaded_indices__:
             return
         cls.__loaded_indices__ = True
-        for index_name, idx_module in cls.BUNGIE['INDICES'].iteritems():
-            index_module = import_module(idx_module)
+
+        # Loading indices.
+        for index_name, module_str in cls.BUNGIE['INDICES'].iteritems():
+            index_module = import_module(module_str)
             for index_obj in index_module.__dict__.itervalues():
                 try:
                     if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
@@ -49,6 +52,18 @@ class Bungiesearch(Search):
             for model in models:
                 cls._model_to_index[model] = index_name
                 cls._model_name_to_index[model.__name__] = index_name
+
+        # Loading aliases.
+        alias_prefix = cls.BUNGIE.get('ALIAS_PREFIX', 'bungie')
+        for module_str in cls.BUNGIE.get('ALIASES', []):
+            alias_module = import_module(module_str)
+            for alias_obj in alias_module.__dict__.itervalues():
+                try:
+                    if issubclass(alias_obj, SearchAlias) and alias_obj != SearchAlias:
+                        alias_instance = alias_obj()
+                        cls._alias_hooks[alias_prefix + '_' + alias_instance._alias_name] = alias_instance
+                except TypeError:
+                    pass # Oops, just attempted to get subclasses of a non-class.
 
     @classmethod
     def _build_key(cls, urls, timeout, **settings):
@@ -124,6 +139,19 @@ class Bungiesearch(Search):
         except KeyError:
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
+    @classmethod
+    def hook_alias(cls, alias, search_instance, model_obj):
+        '''
+        Returns the alias function, if it exists and if it can be applied to this model.
+        '''
+        try:
+            search_alias = cls._alias_hooks[alias]
+            if model_obj not in search_alias._applicable_models:
+                raise ValueError('Search alias {} is not applicable to model {}.'.format(alias, model_obj))
+            return search_alias.prepare(search_instance, model_obj).alias_for
+        except KeyError:
+            raise AttributeError('Could not find search alias named {}. Is this alias defined in BUNGIESEARCH["ALIASES"]?'.format(alias))
+
     def __init__(self, urls=None, timeout=None, force_new=False, raw_results=False, **kwargs):
         '''
         Creates a new ElasticSearch DSL object. Grabs the ElasticSearch connection from the pool
@@ -139,7 +167,7 @@ class Bungiesearch(Search):
         :param **kwargs: Additional settings to pass to the low level elasticsearch client and to elasticsearch-sal-py.search.Search.
         '''
 
-        Bungiesearch.__load_indices__()
+        Bungiesearch.__load_settings__()
 
         urls = urls or Bungiesearch.BUNGIE['URLS']
         if not timeout:
@@ -265,7 +293,6 @@ class Bungiesearch(Search):
                 self._raw_results_only = key.step
                 key.step = None
                 single_item = key.start - key.stop == -1
-                print key.start, key.stop, key.step
             else:
                 single_item = False
         else:
