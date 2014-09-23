@@ -54,10 +54,11 @@ class Bungiesearch(Search):
                 cls._model_name_to_index[model.__name__] = index_name
 
         # Loading aliases.
-        alias_prefix = cls.BUNGIE.get('ALIAS_PREFIX', 'bungie')
-        if alias_prefix != '':
-            alias_prefix += '_'
-        for module_str in cls.BUNGIE.get('ALIASES', []):
+        for alias_prefix, module_str in cls.BUNGIE.get('ALIASES', {}).iteritems():
+            if alias_prefix is None:
+                alias_prefix = 'bungie'
+            if alias_prefix != '':
+                alias_prefix += '_'
             alias_module = import_module(module_str)
             for alias_obj in alias_module.__dict__.itervalues():
                 try:
