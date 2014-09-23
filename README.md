@@ -166,7 +166,7 @@ A search alias is either applicable to a `list` (or `tuple`) of managed models, 
 
 ### Example
 
-The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title`, supposing that no custom search alias prefix is defined in the settings (cf. below).
+The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title`, supposing that the namespace is set to `None` in the settings (cf. below).
 
 #### Definition
 ```python
@@ -197,7 +197,7 @@ Although not mandatory, the `Meta` subclass enabled custom naming and model rest
 ##### alias_name
 *Optional:* A string corresponding the suffix name of this search alias. Defaults to the lower case class name.
 
-**WARNING**: by default, as explained in the "Settings" section below, all search aliases share a prefix. This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
+**WARNING**: As explained in the "Settings" section below, all search aliases in a given module share the prefix. This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
 In other words, if you define the `alias_name` to `test`, then it must be called as `model_obj.objects.$prefix$_test` where `$prefix$` is the prefix defined in the settings. 
 
 #### Sophisticated example
@@ -230,8 +230,7 @@ You must defined `BUNGIESEARCH` in your Django settings in order for bungiesearc
 BUNGIESEARCH = {
                 'URLS': ['localhost'], # No leading http:// or the elasticsearch client will complain.
                 'INDICES': {'main_index': 'myproject.myapp.myindices'} # Must be a module path.
-                'ALIASES': ['myproject.myapp.search_aliases'],
-                'ALIAS_PREFIX': 'bsearch',
+                'ALIASES': {'bsearch': 'myproject.search_aliases'},
                 'SIGNALS': {'BUFFER_SIZE': 1},
                 'TIMEOUT': 5
                 }
@@ -244,12 +243,11 @@ BUNGIESEARCH = {
 *Required:* must be a dictionary where each key is the name of an elasticsearch index and each value is a path to a Python module containing classes which inherit from `bungiesearch.indices.ModelIndex` (cf. below).
 
 ### ALIASES
-*Optional:* list of Python modules containing classes which inherit from `bungiesearch.aliases.SearchAlias`.
+*Optional:* a dictionary whose key is the alias namespace and whose value is the Python module containing classes which inherit from `bungiesearch.aliases.SearchAlias`.
+If the namespace is `None`, then the alias will be named `bungie`. If the namespace is an empty string, there will be no alias namespace. The provided namespace will be appended by an underscore.
+In the example above, each search alias defined in `myproject.search_aliases` will be referenced as `$ModelObj$.objects.bsearch_$alias$`, where `$ModelObj$` is a Django model and `$alias$` is the name of the search alias.
 
-### ALIAS_PREFIX
-*Optional:* allows you to define the prefix used for search aliases. Defaults to `bungie_`. Set to an empty string to not have any alias at all.
-
-For example, if a search alias is called `title_search`, then it is accessed via `model_obj.objects.bungie_title_search`. The purpose is to not accidently overwrite Django's default manager functions with search aliases.
+The purpose is to not accidently overwrite Django's default manager functions with search aliases.
 
 ### SIGNALS
 *Optional:* if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager.
@@ -351,8 +349,7 @@ class InvalidAlias(SearchAlias):
 BUNGIESEARCH = {
                 'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
                 'INDICES': {'bungiesearch_demo': 'core.search_indices'},
-                'ALIASES': ['core.search_aliases'],
-                'ALIAS_PREFIX': 'bsearch',
+                'ALIASES': {'bsearch': 'myproject.search_aliases'},
                 'SIGNALS': {'BUFFER_SIZE': 1}
                 }
 ```
