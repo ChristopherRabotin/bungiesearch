@@ -186,5 +186,7 @@ class ModelIndexTestCase(TestCase):
                     self.assertEqual(expected[obj.title][key], value, 'Got {} expected {} for key {} in {}.'.format(value, expected[obj.title][key], key, obj.title))
     
     def test_manager_interference(self):
-        import pdb;pdb.set_trace()
+        '''
+        This tests that saving an object which is not managed by Bungiesearch won't try to update the index for that model.
+        '''
         Unrelated.objects.create(title='test', description='blah')
