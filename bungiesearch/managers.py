@@ -26,6 +26,7 @@ class BungiesearchManager(Manager):
         if 'SIGNALS' in settings:
             signals.post_save.connect(post_save_connector, sender=self.model)
             signals.pre_delete.connect(pre_delete_connector, sender=self.model)
+        Bungiesearch._managed_models.append(self.model)
 
     def __getattr__(self, alias):
         '''
