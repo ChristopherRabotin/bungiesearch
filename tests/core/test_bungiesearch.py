@@ -71,6 +71,13 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
     
+    def test_raw_fetch(self):
+        '''
+        Test searching and mapping.
+        '''
+        item = Article.objects.search.query('match', _all='Description')[:1:True]
+        self.assertTrue(hasattr(item, '_meta'), 'Fetching first raw results did not return an object with a _meta attribute.')
+    
     def test_iteration(self):
         '''
         Tests iteration on Bungiesearch items.
