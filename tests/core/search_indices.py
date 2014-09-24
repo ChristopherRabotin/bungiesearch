@@ -1,6 +1,7 @@
-from core.models import Article
 from bungiesearch.fields import DateField, StringField
 from bungiesearch.indices import ModelIndex
+
+from core.models import Article, NoUpdatedField
 
 
 class ArticleIndex(ModelIndex):
@@ -14,3 +15,10 @@ class ArticleIndex(ModelIndex):
                     'title': {'boost': 1.75},
                     'description': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
+        
+        updated_field = 'updated'
+
+class NoUpdatedFieldIndex(ModelIndex):
+
+    class Meta:
+        model = NoUpdatedField

@@ -2,14 +2,18 @@ import logging
 
 from . import Bungiesearch
 from elasticsearch.helpers import bulk_index
+from datetime import datetime
+from django.utils import timezone
 
-def update_index(model_items, model_name, bulk_size=100, num_docs=-1):
+def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None):
     '''
     Updates the index for the provided model_items.
     :param model_items: a list of model_items (django Model instances, or proxy instances) which are to be indexed, or updated.
     :param model_name: doctype, which must also be the model name.
     :param bulk_size: bulk size for indexing. Defaults to 100.
     :param num_docs: maximum number of model_items from the provided list to be indexed.
+    :param start_date: start date for indexing. Must be as YYYY-MM-DD.
+    :param end_date: end date for indexing. Must be as YYYY-MM-DD.
     :note: If model_items contain multiple models, then num_docs is applied to *each* model. For example, if bulk_size is set to 5,
     and item contains models Article and Article2, then 5 model_items of Article *and* 5 model_items of Article2 will be indexed.
     '''
@@ -24,6 +28,15 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1):
         if isinstance(model_items, (list, tuple)):
             num_docs = len(model_items)
         else:
+            # Let's parse the start date and end date.
+            if start_date or end_date:
+                if index_instance.updated_field is None:
+                    raise ValueError('Cannot filter by date if the updated_field is not set in the index\'s Meta class.')
+                if start_date: 
+                    model_items = model_items.filter(**{'{}__gte'.format(index_instance.updated_field): __str_to_tzdate__(start_date)})
+                if end_date:
+                    model_items = model_items.filter(**{'{}__lte'.format(index_instance.updated_field): __str_to_tzdate__(end_date)})
+            
             logging.info('Fetching number of documents to be added to {}.'.format(model.__name__))
             num_docs = model_items.count()
     else:
@@ -50,3 +63,6 @@ def delete_index_item(item, model_name):
     index_instance = src.get_model_index(model_name)
     item_es_id = index_instance.fields['_id'].value(item)
     src.get_es_instance().delete(index_name, model_name, item_es_id)
+
+def __str_to_tzdate__(date_str):
+    return timezone.make_aware(datetime.strptime(date_str, '%Y-%m-%d'), timezone.get_current_timezone())

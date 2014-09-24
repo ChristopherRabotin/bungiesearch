@@ -1,22 +1,23 @@
 from datetime import datetime
+from time import sleep
 
+from bungiesearch.management.commands import search_index
+from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
 
-from core.models import Article, Unrelated
+from core.models import Article, Unmanaged, NoUpdatedField
 from core.search_indices import ArticleIndex
-from bungiesearch.management.commands import search_index
-from time import sleep
 
 
 class ModelIndexTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         # Let's start by creating the index and mapping.
-        # If we create an object before the index, the index 
+        # If we create an object before the index, the index
         # will be created automatically, and we want to test the command.
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
-        
+
         art_1 = {'title': 'Title one',
                  'description': 'Description of article 1.',
                  'link': 'http://example.com/article_1',
@@ -70,14 +71,14 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
-    
+
     def test_raw_fetch(self):
         '''
         Test searching and mapping.
         '''
         item = Article.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, '_meta'), 'Fetching first raw results did not return an object with a _meta attribute.')
-    
+
     def test_iteration(self):
         '''
         Tests iteration on Bungiesearch items.
@@ -88,7 +89,7 @@ class ModelIndexTestCase(TestCase):
         self.assertTrue(all([result in db_items for result in lazy_search[:]]), 'Searching for title "title" did not return all articles when using empty slice.')
         self.assertEqual(len(lazy_search[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
         self.assertEqual(len(lazy_search[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
-    
+
     def test_no_results(self):
         '''
         Test empty results.
@@ -191,9 +192,17 @@ class ModelIndexTestCase(TestCase):
             for key, value in ArticleIndex().serialize_object(obj).iteritems():
                 if key in expected[obj.title]:
                     self.assertEqual(expected[obj.title][key], value, 'Got {} expected {} for key {} in {}.'.format(value, expected[obj.title][key], key, obj.title))
-    
+
     def test_manager_interference(self):
         '''
         This tests that saving an object which is not managed by Bungiesearch won't try to update the index for that model.
         '''
-        Unrelated.objects.create(title='test', description='blah')
+        Unmanaged.objects.create(title='test', description='blah')
+
+    def test_time_indexing(self):
+        try:
+            update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d'))
+        except Exception as e:
+            self.fail('update_index with a start date failed for model Article: {}.'.format(e))
+
+        self.assertRaises(ValueError, update_index, **{'model_items': NoUpdatedField.objects.all(), 'model_name': 'NoUpdatedField', 'end_date': datetime.strftime(datetime.now(), '%Y-%m-%d')})
