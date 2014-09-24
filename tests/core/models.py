@@ -22,7 +22,17 @@ class Article(models.Model):
     class Meta:
         app_label = 'core'
 
-class Unrelated(models.Model):
+class NoUpdatedField(models.Model):
+    title = models.TextField(db_index=True)
+    description = models.TextField(blank=True)
+
+    objects = BungiesearchManager()
+
+    class Meta:
+        app_label = 'core'
+
+
+class Unmanaged(models.Model):
     title = models.TextField(db_index=True)
     description = models.TextField(blank=True)
 
