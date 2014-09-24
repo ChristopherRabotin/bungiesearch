@@ -26,6 +26,7 @@ class Bungiesearch(Search):
     # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
     _index_to_model_idx, _index_to_model = defaultdict(list), defaultdict(list)
     _model_to_index, _model_name_to_index, _model_name_to_model_idx, _alias_hooks = {}, {}, {}, {}
+    _managed_models = []
     __loaded_indices__ = False
 
     @classmethod

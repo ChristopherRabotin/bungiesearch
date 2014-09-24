@@ -21,3 +21,10 @@ class Article(models.Model):
 
     class Meta:
         app_label = 'core'
+
+class Unrelated(models.Model):
+    title = models.TextField(db_index=True)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        app_label = 'core'

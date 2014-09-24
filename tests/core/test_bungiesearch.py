@@ -3,7 +3,7 @@ from datetime import datetime
 from django.test import TestCase
 import pytz
 
-from core.models import Article
+from core.models import Article, Unrelated
 from core.search_indices import ArticleIndex
 from bungiesearch.management.commands import search_index
 from time import sleep
@@ -184,3 +184,7 @@ class ModelIndexTestCase(TestCase):
             for key, value in ArticleIndex().serialize_object(obj).iteritems():
                 if key in expected[obj.title]:
                     self.assertEqual(expected[obj.title][key], value, 'Got {} expected {} for key {} in {}.'.format(value, expected[obj.title][key], key, obj.title))
+    
+    def test_manager_interference(self):
+        import pdb;pdb.set_trace()
+        Unrelated.objects.create(title='test', description='blah')
