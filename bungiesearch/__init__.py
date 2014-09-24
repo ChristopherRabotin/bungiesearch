@@ -216,6 +216,10 @@ class Bungiesearch(Search):
         '''
         return self._using
 
+    def execute_raw(self):
+        self.raw_results = super(Bungiesearch, self).execute()
+        return self.raw_results
+
     def execute(self, return_results=True):
         '''
         Executes the query and attempts to create model objects from results.
@@ -223,7 +227,7 @@ class Bungiesearch(Search):
         if self.results:
             return self.results if return_results else None
 
-        self.raw_results = super(Bungiesearch, self).execute()
+        self.raw_results = self.execute_raw()
         if self._raw_results_only:
             self.results = self.raw_results
         else:
@@ -295,7 +299,9 @@ class Bungiesearch(Search):
         if isinstance(key, slice):
             if key.step is not None:
                 self._raw_results_only = key.step
-                key.step = None
+                start = key.start if key.start is not None else 0
+                stop = key.stop if key.stop is not None else 0
+                key = slice(start, stop)
                 single_item = key.start - key.stop == -1
             else:
                 single_item = False
