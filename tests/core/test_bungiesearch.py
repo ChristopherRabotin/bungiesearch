@@ -2,7 +2,7 @@ from datetime import datetime
 from time import sleep
 
 from bungiesearch.management.commands import search_index
-from bungiesearch.utils import update_index, __str_to_tzdate__
+from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
 
