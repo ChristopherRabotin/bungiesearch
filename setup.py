@@ -3,7 +3,7 @@ import sys
 from os.path import join, dirname
 from setuptools import setup, find_packages
 
-VERSION = (0, 0, 7)
+VERSION = (0, 0, 8)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -14,6 +14,7 @@ with open(join(dirname(__file__), 'README.md')) as f:
 
 install_requires = [
     'django',
+    'python-dateutil',
 ]
 
 tests_require = []
