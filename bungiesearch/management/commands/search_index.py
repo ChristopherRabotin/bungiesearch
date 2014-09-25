@@ -66,6 +66,18 @@ class Command(BaseCommand):
             default=-1,
             type='int',
             help='Specify the maximum number of items to be indexed. By default will index the whole model.'),
+        make_option('--start',
+            action='store',
+            dest='start_date',
+            default=None,
+            type='str',
+            help='Specify the start date and time of documents to be indexed.'),
+        make_option('--end',
+            action='store',
+            dest='end_date',
+            default=None,
+            type='str',
+            help='Specify the end date and time of documents to be indexed.'),
         )
 
     def handle(self, *args, **options):
@@ -147,4 +159,4 @@ class Command(BaseCommand):
                 model_names = [model for index in src.get_indices() for model in src.get_models(index)]
             # Update index.
             for model_name in model_names:
-                update_index(src.get_model_index(model_name).get_model().objects.all(), model_name, bulk_size=options['bulk_size'], num_docs=options['num_docs'])
+                update_index(src.get_model_index(model_name).get_model().objects.all(), model_name, bulk_size=options['bulk_size'], num_docs=options['num_docs'], start_date=options['start_date'], end_date=options['end_date'])

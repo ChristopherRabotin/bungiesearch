@@ -2,7 +2,7 @@ import logging
 
 from . import Bungiesearch
 from elasticsearch.helpers import bulk_index
-from datetime import datetime
+from dateutil.parser import parse as parsedt
 from django.utils import timezone
 
 def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None):
@@ -65,4 +65,4 @@ def delete_index_item(item, model_name):
     src.get_es_instance().delete(index_name, model_name, item_es_id)
 
 def __str_to_tzdate__(date_str):
-    return timezone.make_aware(datetime.strptime(date_str, '%Y-%m-%d'), timezone.get_current_timezone())
+    return timezone.make_aware(parsedt(date_str), timezone.get_current_timezone())

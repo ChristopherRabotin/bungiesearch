@@ -2,7 +2,7 @@ from datetime import datetime
 from time import sleep
 
 from bungiesearch.management.commands import search_index
-from bungiesearch.utils import update_index
+from bungiesearch.utils import update_index, __str_to_tzdate__
 from django.test import TestCase
 import pytz
 
@@ -201,7 +201,7 @@ class ModelIndexTestCase(TestCase):
 
     def test_time_indexing(self):
         try:
-            update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d'))
+            update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M'))
         except Exception as e:
             self.fail('update_index with a start date failed for model Article: {}.'.format(e))
 
