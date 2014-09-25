@@ -178,8 +178,16 @@ class Bungiesearch(Search):
             timeout = getattr(Bungiesearch.BUNGIE, 'TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
 
         search_keys = ['using', 'index', 'doc_type', 'extra']
-        search_settings = dict((k, v) for k, v in kwargs.iteritems() if k in search_keys)
-        es_settings = dict((k, v) for k, v in kwargs.iteritems() if k not in search_keys)
+        search_settings, es_settings = {}, {}
+        for k, v in kwargs.iteritems():
+            if k in search_keys:
+                search_settings[k] = v
+            else:
+                es_settings[k] = v
+
+        if not es_settings:
+            # If there aren't any provided elasticsearch settings, let's see if it's defined in the settings.
+            es_settings = Bungiesearch.BUNGIE.get('ES_SETTINGS', {})
 
         # Building a caching key to cache the es_instance for later use (and retrieved a previously cached es_instance).
         cache_key = Bungiesearch._build_key(urls, timeout, **es_settings)
