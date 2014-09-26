@@ -1,18 +1,7 @@
 
 class SearchAlias(object):
     '''
-    Introspects a model to generate an indexable mapping and methods to extract objects.
-    Supports custom fields, including Python code, and all elasticsearch field types (apart from binary type).
-    
-    ModelIndex does efficient querying by only fetching from the database fields which are to be indexed.
-    
-    How to create an index?
-
-    1. Create a class which inherits from ModelIndex.
-    2. Define custom indexed fields as class attributes. Values must be instances AbstractField. Important info in 3b.
-    3. Define a `Meta` subclass, which must contain at least `model` as a class attribute.
-        a. Optional class attributes: `fields`, `excludes` and `additional_fields`.
-        b. If custom indexed field requires model attributes which are not in the difference between `fields` and `excludes`, these must be defined in `additional_fields`.
+    Defines search aliases for specific models. Essentially works like Django Managers but for Bungiesearch.
     '''
     def __init__(self):
         # Introspect the model, adding/removing fields as needed.
