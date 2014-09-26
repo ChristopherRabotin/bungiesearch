@@ -1,6 +1,8 @@
 from datetime import datetime
+from operator import attrgetter
 from time import sleep
 
+from bungiesearch import Bungiesearch
 from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
 from django.test import TestCase
@@ -37,6 +39,8 @@ class ModelIndexTestCase(TestCase):
         art_2['description'] = 'This is a second article.'
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
         Article.objects.create(**art_2)
+
+        NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
         print 'Sleeping two seconds for Elasticsearch to index.'
@@ -208,10 +212,14 @@ class ModelIndexTestCase(TestCase):
         self.assertRaises(ValueError, update_index, **{'model_items': NoUpdatedField.objects.all(), 'model_name': 'NoUpdatedField', 'end_date': datetime.strftime(datetime.now(), '%Y-%m-%d')})
 
     def test_optimal_queries(self):
-        db_item = NoUpdatedField.objects.create(title='My title', description='This is a short description.')
-        print 'Sleeping two seconds for Elasticsearch to update its index after creating an item.'
-        sleep(2)
+        db_item = NoUpdatedField.objects.get(pk=1)
         src_item = NoUpdatedField.objects.search.query('match', title='My title')[0]
         self.assertEqual(src_item.id, db_item.id, 'Searching for the object did not return the expected object id.')
         self.assertTrue(src_item._meta.proxy, 'Was expecting a proxy model after fetching item.')
         self.assertEqual(src_item._meta.proxy_for_model, NoUpdatedField, 'Proxy for model of search item is not "NoUpdatedField".')
+
+    def test_concat_queries(self):
+        items = Article.objects.bsearch_title_search('title')[::True] + NoUpdatedField.objects.search.query('match', title='My title')[::True]
+        for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
+            self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
+        

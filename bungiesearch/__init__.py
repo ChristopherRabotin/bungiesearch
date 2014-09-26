@@ -156,6 +156,52 @@ class Bungiesearch(Search):
         except KeyError:
             raise AttributeError('Could not find search alias named {}. Is this alias defined in BUNGIESEARCH["ALIASES"]?'.format(alias))
 
+    @classmethod
+    def map_raw_results(cls, raw_results, instance=None):
+        '''
+        Maps raw results to database model objects.
+        :param raw_results: list raw results as returned from elasticsearch-dsl-py.
+        :param instance: Bungiesearch instance if you want to make use of `.only()` or `optmize_queries` as defined in the ModelIndex.
+        :return: list of mapped results in the *same* order as returned by elasticsearch.
+        '''
+        # Let's iterate over the results and determine the appropriate mapping.
+        model_results = defaultdict(list)
+        # Initializing the list to the number of returned results. This allows us to restore each item in its position.
+        if hasattr(raw_results, 'hits'):
+            results = [None] * len(raw_results.hits)
+        else:
+            results = [None] * len(raw_results)
+        found_results = {}
+        for pos, result in enumerate(raw_results):
+            model_name = result._meta.doc_type
+            if model_name not in Bungiesearch._model_name_to_index or Bungiesearch._model_name_to_index[model_name] != result._meta.index:
+                logging.warn('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
+                results[pos] = result
+            else:
+                model_results[model_name].append(result.id)
+                found_results['{}.{}'.format(model_name, result.id)] = pos
+        # Now that we have model ids per model name, let's fetch everything at once.
+
+        for model_name, ids in model_results.iteritems():
+            model_idx = Bungiesearch._model_name_to_model_idx[model_name]
+            model_obj = model_idx.get_model()
+            items = model_obj.objects.filter(pk__in=ids)
+            if instance:
+                if instance._only == '__model' or model_idx.optimize_queries:
+                    desired_fields = model_idx.fields_to_fetch
+                elif instance._only == '__fields':
+                    desired_fields = instance._fields
+                else:
+                    desired_fields = instance._only
+
+                if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
+                    items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
+            # Let's reposition each item in the results.
+            for item in items:
+                results[found_results['{}.{}'.format(model_name, item.pk)]] = item
+
+        return results
+
     def __init__(self, urls=None, timeout=None, force_new=False, raw_results=False, **kwargs):
         '''
         Creates a new ElasticSearch DSL object. Grabs the ElasticSearch connection from the pool
@@ -226,7 +272,6 @@ class Bungiesearch(Search):
 
     def execute_raw(self):
         self.raw_results = super(Bungiesearch, self).execute()
-        return self.raw_results
 
     def execute(self, return_results=True):
         '''
@@ -235,44 +280,21 @@ class Bungiesearch(Search):
         if self.results:
             return self.results if return_results else None
 
-        self.raw_results = self.execute_raw()
+        self.execute_raw()
+
         if self._raw_results_only:
             self.results = self.raw_results
         else:
-            # Let's iterate over the results and determine the appropriate mapping.
-            model_results = defaultdict(list)
-            # Initializing the list to the number of returned results. This allows us to restore each item in its position.
-            self.results = [None] * len(self.raw_results.hits)
-            found_results = {}
-            for pos, result in enumerate(self.raw_results):
-                model_name = result._meta.doc_type
-                if model_name not in self._model_name_to_index or self._model_name_to_index[model_name] != result._meta.index:
-                    logging.warn('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
-                    self.results[pos] = result
-                else:
-                    model_results[model_name].append(result.id)
-                    found_results['{}.{}'.format(model_name, result.id)] = pos
-            # Now that we have model ids per model name, let's fetch everything at once.
-
-            for model_name, ids in model_results.iteritems():
-                model_idx = self._model_name_to_model_idx[model_name]
-                model_obj = model_idx.get_model()
-                items = model_obj.objects.filter(pk__in=ids)
-                if self._only == '__model' or model_idx.optimize_queries:
-                    desired_fields = model_idx.fields_to_fetch
-                elif self._only == '__fields':
-                    desired_fields = self._fields
-                else:
-                    desired_fields = self._only
-
-                if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
-                    items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
-                # Let's reposition each item in the results.
-                for item in items:
-                    self.results[found_results['{}.{}'.format(model_name, item.pk)]] = item
+            self.map_results()
 
         if return_results:
             return self.results
+
+    def map_results(self):
+        '''
+        Maps raw results and store them.
+        '''
+        self.results = Bungiesearch.map_raw_results(self.raw_results, self)
 
     def only(self, *fields):
         '''
@@ -307,10 +329,13 @@ class Bungiesearch(Search):
         if isinstance(key, slice):
             if key.step is not None:
                 self._raw_results_only = key.step
-                start = key.start if key.start is not None else 0
-                stop = key.stop if key.stop is not None else 0
-                key = slice(start, stop)
-                single_item = key.start - key.stop == -1
+                if key.start is not None and key.stop is not None:
+                    single_item = key.start - key.stop == -1
+                elif key.start is None and key.stop == 1:
+                    single_item = True
+                else:
+                    single_item = False
+                key = slice(key.start, key.stop)
             else:
                 single_item = False
         else:
