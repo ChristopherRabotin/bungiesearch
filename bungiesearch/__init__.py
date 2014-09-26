@@ -193,13 +193,13 @@ class Bungiesearch(Search):
                     desired_fields = instance._fields
                 else:
                     desired_fields = instance._only
-    
+
                 if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
                     items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
             # Let's reposition each item in the results.
             for item in items:
                 results[found_results['{}.{}'.format(model_name, item.pk)]] = item
-        
+
         return results
 
     def __init__(self, urls=None, timeout=None, force_new=False, raw_results=False, **kwargs):
@@ -272,7 +272,6 @@ class Bungiesearch(Search):
 
     def execute_raw(self):
         self.raw_results = super(Bungiesearch, self).execute()
-        return self.raw_results
 
     def execute(self, return_results=True):
         '''
@@ -281,7 +280,8 @@ class Bungiesearch(Search):
         if self.results:
             return self.results if return_results else None
 
-        self.raw_results = self.execute_raw()
+        self.execute_raw()
+
         if self._raw_results_only:
             self.results = self.raw_results
         else:
