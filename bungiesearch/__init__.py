@@ -253,11 +253,12 @@ class Bungiesearch(Search):
                     model_results[model_name].append(result.id)
                     found_results['{}.{}'.format(model_name, result.id)] = pos
             # Now that we have model ids per model name, let's fetch everything at once.
+
             for model_name, ids in model_results.iteritems():
                 model_idx = self._model_name_to_model_idx[model_name]
                 model_obj = model_idx.get_model()
                 items = model_obj.objects.filter(pk__in=ids)
-                if self._only == '__model' or model_idx.optmize_queries:
+                if self._only == '__model' or model_idx.optimize_queries:
                     desired_fields = model_idx.fields_to_fetch
                 elif self._only == '__fields':
                     desired_fields = self._fields

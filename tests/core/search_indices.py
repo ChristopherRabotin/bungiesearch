@@ -11,7 +11,6 @@ class ArticleIndex(ModelIndex):
     class Meta:
         model = Article
         updated_field = 'updated'
-        
         exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
         hotfixes = {'updated': {'null_value': '2013-07-01'},
                     'title': {'boost': 1.75},
@@ -21,3 +20,5 @@ class ArticleIndex(ModelIndex):
 class NoUpdatedFieldIndex(ModelIndex):
     class Meta:
         model = NoUpdatedField
+        exclude = ('description', )
+        optimize_queries = True
