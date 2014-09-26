@@ -95,7 +95,7 @@ class ModelIndexTestCase(TestCase):
         Test empty results.
         '''
         self.assertEqual(list(Article.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
-        self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing did not return an empty list on get item call.')
+        self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing" did not return an empty list on get item call.')
 
 
     def test_custom_search(self):
