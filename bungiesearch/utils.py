@@ -31,7 +31,7 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
             # Let's parse the start date and end date.
             if start_date or end_date:
                 if index_instance.updated_field is None:
-                    raise ValueError('Cannot filter by date if the updated_field is not set in the index\'s Meta class.')
+                    raise ValueError('Cannot filter by date on model {}: no updated_field defined in {}\'s Meta class.'.format(model_name, index_instance.__class__.__name__))
                 if start_date: 
                     model_items = model_items.filter(**{'{}__gte'.format(index_instance.updated_field): __str_to_tzdate__(start_date)})
                 if end_date:

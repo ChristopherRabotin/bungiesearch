@@ -32,7 +32,7 @@ class BungiesearchManager(Manager):
         '''
         Shortcut for search aliases. As explained in the docs (https://docs.python.org/2/reference/datamodel.html#object.__getattr__),
         this is only called as a last resort in case the attribute is not found.
-        This function will check wether the given model is allowed to use the proposed alias and will raise an attribute error if not.
+        This function will check whether the given model is allowed to use the proposed alias and will raise an attribute error if not.
         '''
         from . import Bungiesearch
         return Bungiesearch().hook_alias(alias, self.search, self.model)

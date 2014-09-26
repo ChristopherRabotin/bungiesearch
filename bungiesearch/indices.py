@@ -7,9 +7,9 @@ class ModelIndex(object):
     '''
     Introspects a model to generate an indexable mapping and methods to extract objects.
     Supports custom fields, including Python code, and all elasticsearch field types (apart from binary type).
-    
+
     ModelIndex does efficient querying by only fetching from the database fields which are to be indexed.
-    
+
     How to create an index?
 
     1. Create a class which inherits from ModelIndex.
@@ -25,7 +25,7 @@ class ModelIndex(object):
         try:
             _meta = getattr(self, 'Meta')
         except AttributeError:
-            raise AttributeError('Index does not contain a Meta class.')
+            raise AttributeError('ModelIndex {} does not contain a Meta class.'.format(self.__class__.__name__))
 
         self.model = getattr(_meta, 'model', None)
         self.fields = {}
@@ -65,7 +65,7 @@ class ModelIndex(object):
     def serialize_object(self, obj, obj_pk=None):
         '''
         Serializes an object for it to be added to the index.
-        
+
         :param obj: Object to be serialized. Optional if obj_pk is passed.
         :param obj_pk: Object primary key. Supersedded by `obj` if available.
         :return: A dictionary representing the object as defined in the mapping.
@@ -75,7 +75,7 @@ class ModelIndex(object):
                 # We're using `filter` followed by `values` in order to only fetch the required fields.
                 obj = self.model.objects.filter(pk=obj_pk).values(*self.fields_to_fetch)[0]
             except Exception as e:
-                raise ValueError('Could not find object of primary key = {} in model {}. (Original exception: {}.)'.format(obj_pk, self.model, e))
+                raise ValueError('Could not find object of primary key = {} in model {} (model index class {}). (Original exception: {}.)'.format(obj_pk, self.model, self.__class__.__name__, e))
 
         return dict((name, field.value(obj)) for name, field in self.fields.iteritems())
 
@@ -108,7 +108,7 @@ class ModelIndex(object):
             attr = {'model_attr': f.name}
             if f.has_default():
                 attr['null_value'] = f.default
-            
+
             if f.name in hotfixes:
                 attr.update(hotfixes[f.name])
 

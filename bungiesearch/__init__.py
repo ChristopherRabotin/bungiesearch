@@ -99,7 +99,7 @@ class Bungiesearch(Search):
         try:
             return cls._model_to_index[model] if via_class else cls._model_name_to_index[model]
         except KeyError:
-            raise KeyError('Could not find any index defined for {}. Is the model in one of the model index modules of BUNGIESEARCH["INDICES"]?'.format(model))
+            raise KeyError('Could not find any index defined for model {}. Is the model in one of the model index modules of BUNGIESEARCH["INDICES"]?'.format(model))
 
     @classmethod
     def get_model_index(cls, model):
@@ -111,7 +111,7 @@ class Bungiesearch(Search):
         try:
             return cls._model_name_to_model_idx[model]
         except KeyError:
-            raise KeyError('Could not find any model index defined for model named {}.'.format(model))
+            raise KeyError('Could not find any model index defined for model {}.'.format(model))
 
     @classmethod
     def get_indices(cls):
