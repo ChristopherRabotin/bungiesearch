@@ -35,6 +35,7 @@ class ModelIndex(object):
         additional_fields = getattr(_meta, 'additional_fields', [])
         id_field = getattr(_meta, 'id_field', 'id')
         self.updated_field = getattr(_meta, 'updated_field', None)
+        self.optimize_queries = getattr(_meta, 'optimize_queries', False)
 
         # Add in fields from the model.
         self.fields.update(self._get_fields(fields, excludes, hotfixes))

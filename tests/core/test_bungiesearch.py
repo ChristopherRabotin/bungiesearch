@@ -39,7 +39,7 @@ class ModelIndexTestCase(TestCase):
         Article.objects.create(**art_2)
 
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
-        print "Sleeping two seconds for Elasticsearch to index."
+        print 'Sleeping two seconds for Elasticsearch to index.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     @classmethod
@@ -156,13 +156,13 @@ class ModelIndexTestCase(TestCase):
                  'negative_feedback': 5,
                  }
         obj = Article.objects.create(**art)
-        print "Sleeping two seconds for Elasticsearch to index new item."
+        print 'Sleeping two seconds for Elasticsearch to index new item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_three = len(Article.objects.search.query('match', title='three'))
         self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
         # Let's now delete this object to test the post delete signal.
         obj.delete()
-        print "Sleeping two seconds for Elasticsearch to update its index after deleting an item."
+        print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     def test_serialize_object(self):
@@ -206,3 +206,12 @@ class ModelIndexTestCase(TestCase):
             self.fail('update_index with a start date failed for model Article: {}.'.format(e))
 
         self.assertRaises(ValueError, update_index, **{'model_items': NoUpdatedField.objects.all(), 'model_name': 'NoUpdatedField', 'end_date': datetime.strftime(datetime.now(), '%Y-%m-%d')})
+
+    def test_optimal_queries(self):
+        db_item = NoUpdatedField.objects.create(title='My title', description='This is a short description.')
+        print 'Sleeping two seconds for Elasticsearch to update its index after creating an item.'
+        sleep(2)
+        src_item = NoUpdatedField.objects.search.query('match', title='My title')[0]
+        self.assertEqual(src_item.id, db_item.id, 'Searching for the object did not return the expected object id.')
+        self.assertTrue(src_item._meta.proxy, 'Was expecting a proxy model after fetching item.')
+        self.assertEqual(src_item._meta.proxy_for_model, NoUpdatedField, 'Proxy for model of search item is not "NoUpdatedField".')

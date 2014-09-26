@@ -253,20 +253,20 @@ class Bungiesearch(Search):
                     model_results[model_name].append(result.id)
                     found_results['{}.{}'.format(model_name, result.id)] = pos
             # Now that we have model ids per model name, let's fetch everything at once.
+
             for model_name, ids in model_results.iteritems():
                 model_idx = self._model_name_to_model_idx[model_name]
                 model_obj = model_idx.get_model()
                 items = model_obj.objects.filter(pk__in=ids)
-                if self._only:
-                    if self._only == '__model':
-                        desired_fields = model_idx.fields_to_fetch
-                    elif self._only == '__fields':
-                        desired_fields = self._fields
-                    else:
-                        desired_fields = self._only
+                if self._only == '__model' or model_idx.optimize_queries:
+                    desired_fields = model_idx.fields_to_fetch
+                elif self._only == '__fields':
+                    desired_fields = self._fields
+                else:
+                    desired_fields = self._only
 
-                    if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
-                        items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
+                if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
+                    items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
                 # Let's reposition each item in the results.
                 for item in items:
                     self.results[found_results['{}.{}'.format(model_name, item.pk)]] = item

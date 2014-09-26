@@ -141,6 +141,14 @@ By default, there aren't any special settings, apart for String fields, where th
 ##### id_field
 *Optional:* the model field to use as a unique ID for elasticsearch's metadata `_id`. Defaults to `id` (also called [`pk`](https://docs.djangoproject.com/en/dev/topics/db/models/#automatic-primary-key-fields)).
 
+##### updated_field
+*Optional:* set the model's field which can be filtered on dates in order to find when objects have been updated. Note, this is *mandatory* to use `--start` and/or `--end` when updating index (with `search_index --update`).
+
+##### optimize_queries
+*Optional:* set to True to make efficient queries when automatically mapping to database objects. This will *always* restrict fetching to the fields set in `fields` and in `additional_fields`.
+*Note:* You can also perform an optimal database query with `.only('__model')`, which will use the same fields as `optimize_queries`, or `.only('__fields')`, which will use the fields provided in the `.fields()` call.
+
+
 #### Example
 ```python
 from core.models import Article
