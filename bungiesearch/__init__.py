@@ -144,19 +144,6 @@ class Bungiesearch(Search):
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
     @classmethod
-    def hook_alias(cls, alias, search_instance, model_obj):
-        '''
-        Returns the alias function, if it exists and if it can be applied to this model.
-        '''
-        try:
-            search_alias = cls._alias_hooks[alias]
-            if search_alias._applicable_models and model_obj not in search_alias._applicable_models:
-                raise ValueError('Search alias {} is not applicable to model {}.'.format(alias, model_obj))
-            return search_alias.prepare(search_instance, model_obj).alias_for
-        except KeyError:
-            raise AttributeError('Could not find search alias named {}. Is this alias defined in BUNGIESEARCH["ALIASES"]?'.format(alias))
-
-    @classmethod
     def map_raw_results(cls, raw_results, instance=None):
         '''
         Maps raw results to database model objects.
@@ -347,3 +334,23 @@ class Bungiesearch(Search):
             except IndexError:
                 return []
         return results[key.start:key.stop]
+
+    def hook_alias(self, alias, model_obj=None):
+        '''
+        Returns the alias function, if it exists and if it can be applied to this model.
+        '''
+        try:
+            search_alias = self._alias_hooks[alias]
+        except KeyError:
+            raise AttributeError('Could not find search alias named {}. Is this alias defined in BUNGIESEARCH["ALIASES"]?'.format(alias))
+        else:
+            if search_alias._applicable_models and model_obj and model_obj not in search_alias._applicable_models:
+                raise ValueError('Search alias {} is not applicable to model {}.'.format(alias, model_obj))
+            return search_alias.prepare(self, model_obj).alias_for
+
+    def __getattr__(self, alias):
+        '''
+        Shortcut for search aliases. As explained in the docs (https://docs.python.org/2/reference/datamodel.html#object.__getattr__),
+        this is only called as a last resort in case the attribute is not found.
+        '''
+        return self.hook_alias(alias)

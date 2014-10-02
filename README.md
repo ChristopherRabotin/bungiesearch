@@ -37,9 +37,13 @@ See section "Full example" at the bottom of page to see the code needed to perfo
 
 `Article.objects.search.query('match', _all='Description')`
 
-### Use a search alias.
+### Use a search alias on a model's manager.
 
 `Article.objects.bsearch_title_search('title')`
+
+### Use a search alias on a bungiesearch instance.
+
+`Article.objects.search.bsearch_title_search('title').bsearch_titlefilter('filter this title')`
 
 ### Iterate over search results
 
@@ -170,11 +174,11 @@ class ArticleIndex(ModelIndex):
 ## SearchAlias
 A `SearchAlias` define search shortcuts (somewhat similar to [Django managers](https://docs.djangoproject.com/en/dev/topics/db/managers/)). Often times, a given search will be used in multiple parts of the code. SearchAliases allow you define those queries, filters, or any bungiesearch/elasticsearch-dsl-py calls as an alias.
 
-A search alias is either applicable to a `list` (or `tuple`) of managed models, or to all managed models. It's very simple, so here's an example which is detailed right below.
+A search alias is either applicable to a `list` (or `tuple`) of managed models, or to any bungiesearch instance. It's very simple, so here's an example which is detailed right below.
 
 ### Example
 
-The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title`, supposing that the namespace is set to `None` in the settings (cf. below).
+The most simple implementation of a SearchAlias is as follows. This search alias can be called via `Article.objects.bungie_title` (or `Article.objects.search.bungie_title`), supposing that the namespace is set to `None` in the settings (cf. below).
 
 #### Definition
 ```python
@@ -205,8 +209,10 @@ Although not mandatory, the `Meta` subclass enabled custom naming and model rest
 ##### alias_name
 *Optional:* A string corresponding the suffix name of this search alias. Defaults to the lower case class name.
 
-**WARNING**: As explained in the "Settings" section below, all search aliases in a given module share the prefix. This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
+**WARNING**: As explained in the "Settings" section below, all search aliases in a given module share the prefix (or namespace). This is to prevent aliases from accidently overwriting Django manager function (e.g. `update` or `get`).
 In other words, if you define the `alias_name` to `test`, then it must be called as `model_obj.objects.$prefix$_test` where `$prefix$` is the prefix defined in the settings. 
+This prefix is also applicable to search aliases which are available via bungiesearch instances directly. Hence, one can define in one module search utilities (e.g. `regex` and `range`) and define model specific aliases (e.g. `title`) in another module,
+and use both in conjunction as such: `Article.objects.search.bungie_title('search title').utils_range(field='created', gte='2014-05-20', as_query=True)`. These aliases can be concatenated ad vitam aeternam.
 
 #### Sophisticated example
 This example shows that we can have some fun with search aliases. In this case, we define a Range alias which is applicable to any field on any model.

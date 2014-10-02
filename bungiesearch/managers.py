@@ -34,5 +34,4 @@ class BungiesearchManager(Manager):
         this is only called as a last resort in case the attribute is not found.
         This function will check whether the given model is allowed to use the proposed alias and will raise an attribute error if not.
         '''
-        from . import Bungiesearch
-        return Bungiesearch().hook_alias(alias, self.search, self.model)
+        return self.search.hook_alias(alias, self.model)

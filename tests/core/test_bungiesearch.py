@@ -101,7 +101,6 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(list(Article.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
         self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing" did not return an empty list on get item call.')
 
-
     def test_custom_search(self):
         '''
         Test searching on custom index and doc_type.
@@ -146,6 +145,11 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(len(title_alias[:1]), 1, 'Get item on an alias search with start=None and stop=1 did not return one item.')
         self.assertEqual(len(title_alias[:2]), 2, 'Get item on an alias search with start=None and stop=2 did not return two item.')
         self.assertEqual(title_alias.to_dict(), Article.objects.bsearch_title('title').to_dict(), 'Alias applicable to all models does not return the same JSON request body as the model specific one.')
+
+    def test_bungie_instance_search_aliases(self):
+        alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
+        expected = {'query': {'filtered': {'filter': {'term': {'title': 'title filter'}}, 'query': {'match': {'title': 'title query'}}}}}
+        self.assertEqual(alias_dictd, expected, 'Alias on Bungiesearch instance did not return the expected dictionary.')
 
     def test_post_save(self):
         art = {'title': 'Title three',

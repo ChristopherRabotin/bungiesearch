@@ -20,3 +20,7 @@ class InvalidAlias(SearchAlias):
 
     class Meta:
         models = (Article,)
+
+class TitleFilter(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.filter('term', title=title)
