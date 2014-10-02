@@ -2,6 +2,7 @@
 class SearchAlias(object):
     '''
     Defines search aliases for specific models. Essentially works like Django Managers but for Bungiesearch.
+    These work for both managers and bungiesearch instances. See the docs (and if they aren't clear, open an issue). 
     '''
     def __init__(self):
         # Introspect the model, adding/removing fields as needed.
