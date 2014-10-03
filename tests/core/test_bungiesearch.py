@@ -132,6 +132,7 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
         self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
+        self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_nonapplicablealias')
 
     def test_search_aliases(self):
         '''
@@ -226,4 +227,3 @@ class ModelIndexTestCase(TestCase):
         items = Article.objects.bsearch_title_search('title')[::True] + NoUpdatedField.objects.search.query('match', title='My title')[::True]
         for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
             self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
-        
