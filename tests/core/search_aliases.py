@@ -1,5 +1,6 @@
-from core.models import Article
 from bungiesearch.aliases import SearchAlias
+
+from core.models import Article, NoUpdatedField
 
 
 class SearchTitle(SearchAlias):
@@ -15,12 +16,16 @@ class Title(SearchAlias):
         return self.search_instance.query('match', title=title)
 
 class InvalidAlias(SearchAlias):
-    def alias_for_does_not_exist(self, title):
-        return title
-
     class Meta:
         models = (Article,)
 
 class TitleFilter(SearchAlias):
     def alias_for(self, title):
         return self.search_instance.filter('term', title=title)
+
+class NonApplicableAlias(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.filter('term', title=title)
+
+    class Meta:
+        models = (NoUpdatedField,)

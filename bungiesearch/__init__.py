@@ -344,8 +344,11 @@ class Bungiesearch(Search):
         except KeyError:
             raise AttributeError('Could not find search alias named {}. Is this alias defined in BUNGIESEARCH["ALIASES"]?'.format(alias))
         else:
-            if search_alias._applicable_models and model_obj and model_obj not in search_alias._applicable_models:
-                raise ValueError('Search alias {} is not applicable to model {}.'.format(alias, model_obj))
+            if search_alias._applicable_models:
+                if (model_obj and model_obj not in search_alias._applicable_models) or \
+                     not any([app_model_obj.__name__ in self._doc_type for app_model_obj in search_alias._applicable_models]):
+                    
+                    raise ValueError('Search alias {} is not applicable to model/doc_types {}.'.format(alias, model_obj if model_obj else self._doc_type))
             return search_alias.prepare(self, model_obj).alias_for
 
     def __getattr__(self, alias):
