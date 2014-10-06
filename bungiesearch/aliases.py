@@ -35,3 +35,10 @@ class SearchAlias(object):
 
     def alias_for(self, **kwargs):
         raise NotImplementedError('{} does not provide an implementation for alias_for.'.format(self._classname))
+    
+    def get_model(self):
+        if self.model:
+            return self.model
+        if self.search_instance._doc_type and len(self.search_instance._doc_type) == 1:
+            return self.search_instance._model_name_to_model_idx[self.search_instance._doc_type[0]].get_model()
+        raise ValueError('Instance associated to zero doc types or more than one.')

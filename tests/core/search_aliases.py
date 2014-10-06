@@ -29,3 +29,10 @@ class NonApplicableAlias(SearchAlias):
 
     class Meta:
         models = (NoUpdatedField,)
+
+class ReturningSelfAlias(SearchAlias):
+    def alias_for(self):
+        return self
+
+    class Meta:
+        alias_name = 'get_alias_for_test'
