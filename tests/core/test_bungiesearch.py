@@ -151,6 +151,11 @@ class ModelIndexTestCase(TestCase):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
         expected = {'query': {'filtered': {'filter': {'term': {'title': 'title filter'}}, 'query': {'match': {'title': 'title query'}}}}}
         self.assertEqual(alias_dictd, expected, 'Alias on Bungiesearch instance did not return the expected dictionary.')
+    
+    def test_search_alias_model(self):
+        self.assertEqual(Article.objects.bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
+        self.assertEqual(Article.objects.search.bsearch_title('title query').bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
+        self.assertRaises(ValueError, Bungiesearch().bsearch_get_alias_for_test().get_model)
 
     def test_post_save(self):
         art = {'title': 'Title three',
