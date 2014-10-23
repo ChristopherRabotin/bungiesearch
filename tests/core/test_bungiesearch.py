@@ -232,3 +232,11 @@ class ModelIndexTestCase(TestCase):
         items = Article.objects.bsearch_title_search('title')[::True] + NoUpdatedField.objects.search.query('match', title='My title')[::True]
         for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
             self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
+
+    def test_fun(self):
+        '''
+        Test fun queries.
+        '''
+        lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
+        print len(lazy) # Returns the total hits computed by elasticsearch.
+        assert all([type(item) == Article for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
