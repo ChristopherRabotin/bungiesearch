@@ -240,3 +240,10 @@ class ModelIndexTestCase(TestCase):
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         print len(lazy) # Returns the total hits computed by elasticsearch.
         assert all([type(item) == Article for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
+    
+    def test_meta(self):
+        '''
+        Test search meta is set.
+        '''
+        lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
+        assert all([hasattr(item._searchmeta) for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])

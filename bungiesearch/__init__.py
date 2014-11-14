@@ -166,7 +166,7 @@ class Bungiesearch(Search):
                 results[pos] = result
             else:
                 model_results[model_name].append(result.id)
-                found_results['{}.{}'.format(model_name, result.id)] = pos
+                found_results['{}.{}'.format(model_name, result.id)] = (pos, result._meta)
         # Now that we have model ids per model name, let's fetch everything at once.
 
         for model_name, ids in model_results.iteritems():
@@ -183,9 +183,11 @@ class Bungiesearch(Search):
 
                 if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
                     items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
-            # Let's reposition each item in the results.
+            # Let's reposition each item in the results and set the _bungiesearch meta information.
             for item in items:
-                results[found_results['{}.{}'.format(model_name, item.pk)]] = item
+                pos, meta = found_results['{}.{}'.format(model_name, item.pk)]
+                item._searchmeta = meta
+                results[pos] = item
 
         return results
 
