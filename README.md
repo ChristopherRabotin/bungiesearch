@@ -152,6 +152,8 @@ By default, there aren't any special settings, apart for String fields, where th
 *Optional:* set to True to make efficient queries when automatically mapping to database objects. This will *always* restrict fetching to the fields set in `fields` and in `additional_fields`.
 *Note:* You can also perform an optimal database query with `.only('__model')`, which will use the same fields as `optimize_queries`, or `.only('__fields')`, which will use the fields provided in the `.fields()` call.
 
+##### indexing_query
+*Optional:* set to a QuerySet instance to specify the query used when the search_index command is ran to index. This **does not** affect how each piece of content is indexed.
 
 #### Example
 ```python
@@ -169,6 +171,8 @@ class ArticleIndex(ModelIndex):
                     'title': {'boost': 1.75},
                     'description': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
+        optimized_queries = True
+        indexing_query = Article.objects.defer(*exclude).select_related().all().prefetch_related('tags')
 
 ```
 ## SearchAlias

@@ -22,3 +22,4 @@ class NoUpdatedFieldIndex(ModelIndex):
         model = NoUpdatedField
         exclude = ('description', )
         optimize_queries = True
+        indexing_query = NoUpdatedField.objects.defer(*exclude).select_related().all()
