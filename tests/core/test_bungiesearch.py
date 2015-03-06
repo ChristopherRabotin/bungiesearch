@@ -3,6 +3,7 @@ from operator import attrgetter
 from time import sleep
 
 from bungiesearch import Bungiesearch
+from bungiesearch.indices import ModelIndex
 from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
 from django.test import TestCase
@@ -233,6 +234,10 @@ class ModelIndexTestCase(TestCase):
         for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
             self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
 
+    def test_bisindex(self):
+        items = Article.objects.bsearch_bisindex()[:]
+        import pdb;pdb.set_trace()
+
     def test_fun(self):
         '''
         Test fun queries.
@@ -247,3 +252,30 @@ class ModelIndexTestCase(TestCase):
         '''
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         assert all([hasattr(item._searchmeta) for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
+
+#class ModelIndexInitTestCase(TestCase):
+#    def testMultidefaults(self):
+#        '''
+#        Tests that creating several model indices all marked as default will raise an exception.
+#        '''
+#        from django.db import models
+#        from bungiesearch.managers import BungiesearchManager
+#        
+#        # Model.
+#        class M1(models.Model):
+#            title = models.TextField(db_index=True)
+#            #objects = BungiesearchManager()
+#            class Meta:
+#                app_label = 'core'
+#        
+#        class M1Index1(ModelIndex):
+#            class Meta:
+#                model = M1
+#                default = True
+#        
+#        class M1Index2(ModelIndex):
+#            class Meta:
+#                model = M1
+#                default = True
+#        
+#        import pdb;pdb.set_trace()

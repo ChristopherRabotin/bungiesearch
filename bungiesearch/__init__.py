@@ -25,7 +25,8 @@ class Bungiesearch(Search):
     _cached_es_instances = {}
     # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
     _index_to_model_idx, _index_to_model = defaultdict(list), defaultdict(list)
-    _model_to_index, _model_name_to_index, _model_name_to_model_idx, _alias_hooks = {}, {}, {}, {}
+    _model_to_index, _model_name_to_index, _model_name_to_model_idx, = defaultdict(list), defaultdict(list), defaultdict(list)
+    _model_name_to_default_index, _alias_hooks = {}, {}
     _managed_models = []
     __loaded_indices__ = False
 
@@ -42,17 +43,23 @@ class Bungiesearch(Search):
                 try:
                     if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
                         index_instance = index_obj()
+                        assoc_model = index_instance.get_model()
                         cls._index_to_model_idx[index_name].append(index_instance)
-                        cls._index_to_model[index_name].append(index_instance.get_model())
-                        cls._model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
+                        cls._index_to_model[index_name].append(assoc_model)
+                        cls._model_name_to_model_idx[assoc_model.__name__].append(index_instance)
+                        if index_instance.is_default:
+                            if assoc_model.__name__ in cls._model_name_to_default_index:
+                                raise AttributeError('ModelIndex {} on index {} is marked as default, but {} was already set as default.'.format(index_instance, index_name, cls._model_name_to_default_index[assoc_model.__name__]))
+                            cls._model_name_to_default_index[assoc_model.__name__] = index_instance
                 except TypeError:
                     pass # Oops, just attempted to get subclasses of a non-class.
 
         # Create reverse maps in order to have O(1) access.
+        import pdb;pdb.set_trace()
         for index_name, models in cls._index_to_model.iteritems():
             for model in models:
-                cls._model_to_index[model] = index_name
-                cls._model_name_to_index[model.__name__] = index_name
+                cls._model_to_index[model].append(index_name)
+                cls._model_name_to_index[model.__name__].append(index_name)
 
         # Loading aliases.
         for alias_prefix, module_str in cls.BUNGIE.get('ALIASES', {}).iteritems():
