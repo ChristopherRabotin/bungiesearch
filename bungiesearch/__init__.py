@@ -60,14 +60,6 @@ class Bungiesearch(Search):
                 cls._model_to_index[model].append(index_name)
                 cls._model_name_to_index[model.__name__].append(index_name)
 
-        print '_index_to_model             ', cls._index_to_model
-        print '_model_name_to_index        ', cls._model_name_to_index
-        print '_model_name_to_model_idx    ', cls._model_name_to_model_idx
-        print '_model_to_index             ', cls._model_to_index
-        print '_model_name_to_default_index', cls._model_name_to_default_index
-        print '_idx_name_to_mdl_to_mdlidx', cls._idx_name_to_mdl_to_mdlidx
-
-        import pdb;pdb.set_trace()
         # Loading aliases.
         for alias_prefix, module_str in cls.BUNGIE.get('ALIASES', {}).iteritems():
             if alias_prefix is None:
