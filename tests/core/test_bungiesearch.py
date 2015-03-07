@@ -173,8 +173,10 @@ class ModelIndexTestCase(TestCase):
         obj = Article.objects.create(**art)
         print 'Sleeping two seconds for Elasticsearch to index new item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
-        find_three = len(Article.objects.search.query('match', title='three'))
-        self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
+        find_three = Article.objects.search.query('match', title='three')
+        self.assertEqual(len(find_three), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_three))
+        # Let's check that both returned items are from different indices.
+        self.assertNotEqual(find_three[0:1:True]._meta.index, find_three[1:2:True]._meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
         print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
@@ -232,7 +234,6 @@ class ModelIndexTestCase(TestCase):
     def test_concat_queries(self):
         items = Article.objects.bsearch_title_search('title')[::True] + NoUpdatedField.objects.search.query('match', title='My title')[::True]
         for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
-            import pdb;pdb.set_trace()
             self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
 
     def test_fun(self):

@@ -174,9 +174,9 @@ class Bungiesearch(Search):
                 results[pos] = result
             else:
                 model_results['{}.{}'.format(result._meta.index, model_name)].append(result.id)
-                found_results['{}.{}'.format(model_name, result.id)] = (pos, result._meta)
-        # Now that we have model ids per model name, let's fetch everything at once.
+                found_results['{1._meta.index}.{0}.{1.id}'.format(model_name, result)] = (pos, result._meta)
 
+        # Now that we have model ids per model name, let's fetch everything at once.
         for ref_name, ids in model_results.iteritems():
             index_name, model_name = ref_name.split('.')
             model_idx = Bungiesearch._idx_name_to_mdl_to_mdlidx[index_name][model_name]
@@ -194,7 +194,7 @@ class Bungiesearch(Search):
                     items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
             # Let's reposition each item in the results and set the _bungiesearch meta information.
             for item in items:
-                pos, meta = found_results['{}.{}'.format(model_name, item.pk)]
+                pos, meta = found_results['{}.{}.{}'.format(index_name, model_name, item.pk)]
                 item._searchmeta = meta
                 results[pos] = item
 
