@@ -1,5 +1,3 @@
-import logging
-
 class SearchAlias(object):
     '''
     Defines search aliases for specific models. Essentially works like Django Managers but for Bungiesearch.
