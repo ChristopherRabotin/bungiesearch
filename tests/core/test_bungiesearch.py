@@ -260,3 +260,9 @@ class ModelIndexTestCase(TestCase):
         idxi = len(ManangedButEmpty.objects.search)
         self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))
         mbeo.delete()
+
+    def test_specify_index(self):
+        self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for Article does not match number in database.')
+        self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo_bis').count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database.')
+        self.assertEqual(NoUpdatedField.objects.count(), NoUpdatedField.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for NoUpdatedField does not match number in database.')
+        self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')
