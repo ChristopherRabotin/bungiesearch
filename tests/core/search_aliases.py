@@ -36,3 +36,12 @@ class ReturningSelfAlias(SearchAlias):
 
     class Meta:
         alias_name = 'get_alias_for_test'
+
+class BisIndex(SearchAlias):
+    def alias_for(self):
+        self.search_instance._index = 'bungiesearch_demo_bis'
+        return self.search_instance
+
+    class Meta:
+        models = (Article,)
+        alias_name = 'bisindex'

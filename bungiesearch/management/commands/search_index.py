@@ -100,7 +100,7 @@ class Command(BaseCommand):
                     indices = src.get_indices()
 
                 for index in indices:
-                    logging.warn('Deleting elastic search index {}.'.format(index))
+                    logging.warning('Deleting elastic search index {}.'.format(index))
                     es.indices.delete(index=index, ignore=404)
 
             else:
@@ -108,7 +108,8 @@ class Command(BaseCommand):
                 if options['models']:
                     logging.info('Deleting mapping for models {} on index {}.'.format(options['models'], index))
                     for model_name in options['models'].split():
-                        index_to_doctypes[src.get_index(model_name)].append(model_name)
+                        for index in src.get_index(model_name):
+                            index_to_doctypes[index].append(model_name)
                 elif options['index']:
                     index = options['index']
                     logging.info('Deleting mapping for all models on index {}.'.format(index))
@@ -138,14 +139,14 @@ class Command(BaseCommand):
             if options['models']:
                 model = options['models']
                 for model_name in options['models'].split():
-                    index = src.get_index(model_name)
-                    logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
-                    es.indices.put_mapping(model_name, src.get_model_index(model_name).get_mapping(), index=index)
+                    for index in src.get_index(model_name):
+                        logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
+                        es.indices.put_mapping(model_name, src.get_model_index(model_name).get_mapping(), index=index)
             else:
                 for model_name, model_idx in src._model_name_to_model_idx.iteritems():
-                    index = src.get_index(model_name)
-                    logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
-                    es.indices.put_mapping(model_name, model_idx.get_mapping(), index=index)
+                    for index in src.get_index(model_name):
+                        logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
+                        es.indices.put_mapping(model_name, model_idx.get_mapping(), index=index)
 
         else:
             if options['models']:

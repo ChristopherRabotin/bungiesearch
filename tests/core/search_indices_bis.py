@@ -1,12 +1,12 @@
 from bungiesearch.fields import DateField, StringField
 from bungiesearch.indices import ModelIndex
 
-from core.models import Article, NoUpdatedField
-
+from core.models import Article, ManangedButEmpty
 
 class ArticleIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
     meta_data = StringField(eval_as='" ".join([fld for fld in [obj.link, str(obj.tweet_count), obj.raw] if fld])')
+    more_fields = StringField(eval_as='"some value"')
 
     class Meta:
         model = Article
@@ -16,11 +16,14 @@ class ArticleIndex(ModelIndex):
                     'title': {'boost': 1.75},
                     'description': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
-        default = True
+        default = False
 
-class NoUpdatedFieldIndex(ModelIndex):
+class EmptyIndex(ModelIndex):
+    def matches_indexing_condition(self, item):
+        return False
+
     class Meta:
-        model = NoUpdatedField
-        exclude = ('description', )
+        model = ManangedButEmpty
+        exclude = ('description',)
         optimize_queries = True
-        indexing_query = NoUpdatedField.objects.defer(*exclude).select_related().all()
+

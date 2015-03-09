@@ -1,4 +1,3 @@
-
 class SearchAlias(object):
     '''
     Defines search aliases for specific models. Essentially works like Django Managers but for Bungiesearch.
@@ -40,5 +39,9 @@ class SearchAlias(object):
         if self.model:
             return self.model
         if self.search_instance._doc_type and len(self.search_instance._doc_type) == 1:
-            return self.search_instance._model_name_to_model_idx[self.search_instance._doc_type[0]].get_model()
+            idxes = self.search_instance._model_name_to_model_idx[self.search_instance._doc_type[0]]
+            first_mdl = idxes[0].get_model()
+            if all(mdlidx.get_model() == first_mdl for mdlidx in idxes[1:]): 
+                return first_mdl
+            raise ValueError('SearchAlias {} is associated to more than one index, and the model is differs between indices!')
         raise ValueError('Instance associated to zero doc types or more than one.')

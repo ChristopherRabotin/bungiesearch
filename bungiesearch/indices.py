@@ -36,6 +36,7 @@ class ModelIndex(object):
         id_field = getattr(_meta, 'id_field', 'id')
         self.updated_field = getattr(_meta, 'updated_field', None)
         self.optimize_queries = getattr(_meta, 'optimize_queries', False)
+        self.is_default = getattr(_meta, 'default', True)
 
         # Add in fields from the model.
         self.fields.update(self._get_fields(fields, excludes, hotfixes))
@@ -52,6 +53,12 @@ class ModelIndex(object):
             if cls_attr in self.fields:
                 logging.info('Overwriting implicitly defined model field {} ({}) its explicit definition: {}.'.format(cls_attr, unicode(self.fields[cls_attr]), unicode(obj)))
             self.fields[cls_attr] = obj
+
+    def matches_indexing_condition(self, item):
+        '''
+        Returns True by default to index all documents.
+        '''
+        return True
 
     def get_model(self):
         return self.model
@@ -115,3 +122,6 @@ class ModelIndex(object):
             final_fields[f.name] = django_field_to_index(f, **attr)
 
         return final_fields
+
+    def __str__(self):
+        return '<{0.__class__.__name__}:{0.model.__name__}>'.format(self)

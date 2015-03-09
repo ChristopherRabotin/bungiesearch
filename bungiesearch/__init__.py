@@ -24,8 +24,9 @@ class Bungiesearch(Search):
 
     _cached_es_instances = {}
     # Let's go through the settings in order to map each defined Model/ModelIndex to the elasticsearch index_name.
-    _index_to_model_idx, _index_to_model = defaultdict(list), defaultdict(list)
-    _model_to_index, _model_name_to_index, _model_name_to_model_idx, _alias_hooks = {}, {}, {}, {}
+    _model_to_index, _model_name_to_index, _model_name_to_model_idx = defaultdict(list), defaultdict(list), defaultdict(list)
+    _index_to_model, _idx_name_to_mdl_to_mdlidx = defaultdict(list), defaultdict(dict)
+    _model_name_to_default_index, _alias_hooks = {}, {}
     _managed_models = []
     __loaded_indices__ = False
 
@@ -42,17 +43,22 @@ class Bungiesearch(Search):
                 try:
                     if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
                         index_instance = index_obj()
-                        cls._index_to_model_idx[index_name].append(index_instance)
-                        cls._index_to_model[index_name].append(index_instance.get_model())
-                        cls._model_name_to_model_idx[index_instance.get_model().__name__] = index_instance
+                        assoc_model = index_instance.get_model()
+                        cls._index_to_model[index_name].append(assoc_model)
+                        cls._model_name_to_model_idx[assoc_model.__name__].append(index_instance)
+                        cls._idx_name_to_mdl_to_mdlidx[index_name][assoc_model.__name__] = index_instance
+                        if index_instance.is_default:
+                            if assoc_model.__name__ in cls._model_name_to_default_index:
+                                raise AttributeError('ModelIndex {} on index {} is marked as default, but {} was already set as default.'.format(index_instance, index_name, cls._model_name_to_default_index[assoc_model.__name__]))
+                            cls._model_name_to_default_index[assoc_model.__name__] = index_instance
                 except TypeError:
                     pass # Oops, just attempted to get subclasses of a non-class.
 
         # Create reverse maps in order to have O(1) access.
         for index_name, models in cls._index_to_model.iteritems():
             for model in models:
-                cls._model_to_index[model] = index_name
-                cls._model_name_to_index[model.__name__] = index_name
+                cls._model_to_index[model].append(index_name)
+                cls._model_name_to_index[model.__name__].append(index_name)
 
         # Loading aliases.
         for alias_prefix, module_str in cls.BUNGIE.get('ALIASES', {}).iteritems():
@@ -102,13 +108,15 @@ class Bungiesearch(Search):
             raise KeyError('Could not find any index defined for model {}. Is the model in one of the model index modules of BUNGIESEARCH["INDICES"]?'.format(model))
 
     @classmethod
-    def get_model_index(cls, model):
+    def get_model_index(cls, model, default=True):
         '''
-        Returns the model index for the given model as a string.
-        :param model: model name or model class if via_class set to True.
+        Returns the default model index for the given model, or the list of indices if default is False.
+        :param model: model name as a string.
         :raise KeyError: If the provided model does not have any index associated.
         '''
         try:
+            if default:
+                return cls._model_name_to_default_index[model]
             return cls._model_name_to_model_idx[model]
         except KeyError:
             raise KeyError('Could not find any model index defined for model {}.'.format(model))
@@ -118,7 +126,7 @@ class Bungiesearch(Search):
         '''
         Returns the list of indices defined in the settings.
         '''
-        return cls._index_to_model_idx.keys()
+        return cls._idx_name_to_mdl_to_mdlidx.keys()
 
     @classmethod
     def get_models(cls, index, as_class=False):
@@ -128,7 +136,7 @@ class Bungiesearch(Search):
         :param as_class: set to True to return the model as a model object instead of as a string.
         '''
         try:
-            return cls._index_to_model[index] if as_class else [model.__name__ for model in cls._index_to_model[index]]
+            return cls._index_to_model[index] if as_class else cls._idx_name_to_mdl_to_mdlidx[index].keys()
         except KeyError:
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
@@ -139,7 +147,7 @@ class Bungiesearch(Search):
         :param index: index name.
         '''
         try:
-            return cls._index_to_model_idx[index]
+            return cls._idx_name_to_mdl_to_mdlidx[index].values()
         except KeyError:
             raise KeyError('Could not find any index named {}. Is this index defined in BUNGIESEARCH["INDICES"]?'.format(index))
 
@@ -161,16 +169,17 @@ class Bungiesearch(Search):
         found_results = {}
         for pos, result in enumerate(raw_results):
             model_name = result._meta.doc_type
-            if model_name not in Bungiesearch._model_name_to_index or Bungiesearch._model_name_to_index[model_name] != result._meta.index:
-                logging.warn('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
+            if model_name not in Bungiesearch._model_name_to_index or result._meta.index not in Bungiesearch._model_name_to_index[model_name]:
+                logging.warning('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
                 results[pos] = result
             else:
-                model_results[model_name].append(result.id)
-                found_results['{}.{}'.format(model_name, result.id)] = (pos, result._meta)
-        # Now that we have model ids per model name, let's fetch everything at once.
+                model_results['{}.{}'.format(result._meta.index, model_name)].append(result.id)
+                found_results['{1._meta.index}.{0}.{1.id}'.format(model_name, result)] = (pos, result._meta)
 
-        for model_name, ids in model_results.iteritems():
-            model_idx = Bungiesearch._model_name_to_model_idx[model_name]
+        # Now that we have model ids per model name, let's fetch everything at once.
+        for ref_name, ids in model_results.iteritems():
+            index_name, model_name = ref_name.split('.')
+            model_idx = Bungiesearch._idx_name_to_mdl_to_mdlidx[index_name][model_name]
             model_obj = model_idx.get_model()
             items = model_obj.objects.filter(pk__in=ids)
             if instance:
@@ -185,7 +194,7 @@ class Bungiesearch(Search):
                     items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
             # Let's reposition each item in the results and set the _bungiesearch meta information.
             for item in items:
-                pos, meta = found_results['{}.{}'.format(model_name, item.pk)]
+                pos, meta = found_results['{}.{}.{}'.format(index_name, model_name, item.pk)]
                 item._searchmeta = meta
                 results[pos] = item
 

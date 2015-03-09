@@ -8,7 +8,7 @@ from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
 
-from core.models import Article, Unmanaged, NoUpdatedField
+from core.models import Article, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex
 
 
@@ -151,7 +151,7 @@ class ModelIndexTestCase(TestCase):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
         expected = {'query': {'filtered': {'filter': {'term': {'title': 'title filter'}}, 'query': {'match': {'title': 'title query'}}}}}
         self.assertEqual(alias_dictd, expected, 'Alias on Bungiesearch instance did not return the expected dictionary.')
-    
+
     def test_search_alias_model(self):
         self.assertEqual(Article.objects.bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
         self.assertEqual(Article.objects.search.bsearch_title('title query').bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
@@ -172,8 +172,10 @@ class ModelIndexTestCase(TestCase):
         obj = Article.objects.create(**art)
         print 'Sleeping two seconds for Elasticsearch to index new item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
-        find_three = len(Article.objects.search.query('match', title='three'))
-        self.assertEqual(find_three, 1, 'Searching for "three" in title did not return exactly one item (got {}).'.format(find_three))
+        find_three = Article.objects.search.query('match', title='three')
+        self.assertEqual(len(find_three), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_three))
+        # Let's check that both returned items are from different indices.
+        self.assertNotEqual(find_three[0:1:True]._meta.index, find_three[1:2:True]._meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
         print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
@@ -240,10 +242,27 @@ class ModelIndexTestCase(TestCase):
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         print len(lazy) # Returns the total hits computed by elasticsearch.
         assert all([type(item) == Article for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
-    
+
     def test_meta(self):
         '''
         Test search meta is set.
         '''
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         assert all([hasattr(item._searchmeta) for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
+
+    def test_manangedbutempty(self):
+        '''
+        Tests that the indexing condition controls indexing properly.
+        '''
+        mbeo = ManangedButEmpty.objects.create(title='Some time', description='This should never be indexed.')
+        print 'Sleeping two seconds for Elasticsearch to (not) index.'
+        sleep(2)
+        idxi = len(ManangedButEmpty.objects.search)
+        self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))
+        mbeo.delete()
+
+    def test_specify_index(self):
+        self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for Article does not match number in database.')
+        self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo_bis').count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database.')
+        self.assertEqual(NoUpdatedField.objects.count(), NoUpdatedField.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for NoUpdatedField does not match number in database.')
+        self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')

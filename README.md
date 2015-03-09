@@ -123,6 +123,21 @@ This can also be used to index foreign keys:
 some_field_name = StringField(eval_as='",".join([item for item in obj.some_foreign_relation.values_list("some_field", flat=True)]) if obj.some_foreign_relation else ""')
 ```
 
+### Class methods
+##### matches_indexing_condition
+Override this function to specify whether an item should be indexed or not. This is useful when defining multiple indices (and ModelIndex classes) for a given model.
+This method's signature and super class code is as follows, and allows indexing of all items.
+```python
+def matches_indexing_condition(self, item):
+    return True
+```
+
+For example, if a given elasticsearch index should contain only item whose title starts with `"Awesome"`, then this method can be overridden as follows.
+```python
+def matches_indexing_condition(self, item):
+    return item.title.startswith("Awesome")
+```
+
 ### Meta subclass attributes
 **Note**: in the following, any variable defined a being a `list` could also be a `tuple`.
 ##### model
@@ -155,13 +170,21 @@ By default, there aren't any special settings, apart for String fields, where th
 ##### indexing_query
 *Optional:* set to a QuerySet instance to specify the query used when the search_index command is ran to index. This **does not** affect how each piece of content is indexed.
 
+##### default
+Enables support for a given model to be indexed on several elasticsearch indices. Set to `False` on all but the default index.
+**Note**: if all managed models are set with `default=False` then Bungiesearch will fail to find and index that model.
+
 #### Example
+Indexes all objects of `Article`, as long as their `updated` datetime is less than [21 October 2015 04:29](https://en.wikipedia.org/wiki/Back_to_the_Future_Part_II).
 ```python
 from core.models import Article
 from bungiesearch.indices import ModelIndex
-
+from datetime import datetime
 
 class ArticleIndex(ModelIndex):
+
+    def matches_indexing_condition(self, item):
+        return item.updated < datetime.datetime(2015, 9, 21, 4, 29)
 
     class Meta:
         model = Article
