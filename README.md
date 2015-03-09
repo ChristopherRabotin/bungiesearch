@@ -155,6 +155,10 @@ By default, there aren't any special settings, apart for String fields, where th
 ##### indexing_query
 *Optional:* set to a QuerySet instance to specify the query used when the search_index command is ran to index. This **does not** affect how each piece of content is indexed.
 
+##### default
+Enables support for a given model to be indexed on several elasticsearch indices. Set to `False` on all but the default index.
+**Note**: if all managed models are set with `default=False` then Bungiesearch will fail to find and index that model.
+
 #### Example
 ```python
 from core.models import Article

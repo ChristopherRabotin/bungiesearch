@@ -1,8 +1,7 @@
 from bungiesearch.fields import DateField, StringField
 from bungiesearch.indices import ModelIndex
 
-from core.models import Article
-
+from core.models import Article, ManangedButEmpty
 
 class ArticleIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
@@ -18,3 +17,13 @@ class ArticleIndex(ModelIndex):
                     'description': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
         default = False
+
+class EmptyIndex(ModelIndex):
+    def matches_indexing_condition(self, item):
+        return False
+
+    class Meta:
+        model = ManangedButEmpty
+        exclude = ('description',)
+        optimize_queries = True
+

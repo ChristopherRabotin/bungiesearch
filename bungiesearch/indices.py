@@ -54,6 +54,12 @@ class ModelIndex(object):
                 logging.info('Overwriting implicitly defined model field {} ({}) its explicit definition: {}.'.format(cls_attr, unicode(self.fields[cls_attr]), unicode(obj)))
             self.fields[cls_attr] = obj
 
+    def matches_indexing_condition(self, item):
+        '''
+        Returns True by default to index all documents.
+        '''
+        return True
+
     def get_model(self):
         return self.model
 
@@ -117,5 +123,5 @@ class ModelIndex(object):
 
         return final_fields
 
-    def __str__(self, *args, **kwargs):
+    def __str__(self):
         return '<{0.__class__.__name__}:{0.model.__name__}>'.format(self)

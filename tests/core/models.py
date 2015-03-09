@@ -31,6 +31,14 @@ class NoUpdatedField(models.Model):
     class Meta:
         app_label = 'core'
 
+class ManangedButEmpty(models.Model):
+    title = models.TextField(db_index=True)
+    description = models.TextField(blank=True)
+
+    objects = BungiesearchManager()
+
+    class Meta:
+        app_label = 'core'
 
 class Unmanaged(models.Model):
     title = models.TextField(db_index=True)

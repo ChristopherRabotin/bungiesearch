@@ -3,13 +3,12 @@ from operator import attrgetter
 from time import sleep
 
 from bungiesearch import Bungiesearch
-from bungiesearch.indices import ModelIndex
 from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
 
-from core.models import Article, Unmanaged, NoUpdatedField
+from core.models import Article, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex
 
 
@@ -152,7 +151,7 @@ class ModelIndexTestCase(TestCase):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
         expected = {'query': {'filtered': {'filter': {'term': {'title': 'title filter'}}, 'query': {'match': {'title': 'title query'}}}}}
         self.assertEqual(alias_dictd, expected, 'Alias on Bungiesearch instance did not return the expected dictionary.')
-    
+
     def test_search_alias_model(self):
         self.assertEqual(Article.objects.bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
         self.assertEqual(Article.objects.search.bsearch_title('title query').bsearch_get_alias_for_test().get_model(), Article, 'Unexpected get_model information on search alias.')
@@ -243,10 +242,21 @@ class ModelIndexTestCase(TestCase):
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         print len(lazy) # Returns the total hits computed by elasticsearch.
         assert all([type(item) == Article for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
-    
+
     def test_meta(self):
         '''
         Test search meta is set.
         '''
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
         assert all([hasattr(item._searchmeta) for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
+
+    def test_manangedbutempty(self):
+        '''
+        Tests that the indexing condition controls indexing properly.
+        '''
+        mbeo = ManangedButEmpty.objects.create(title='Some time', description='This should never be indexed.')
+        print 'Sleeping two seconds for Elasticsearch to (not) index.'
+        sleep(2)
+        idxi = len(ManangedButEmpty.objects.search)
+        self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))
+        mbeo.delete()

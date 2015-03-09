@@ -4,7 +4,7 @@ from . import Bungiesearch
 from elasticsearch.helpers import bulk_index
 from dateutil.parser import parse as parsedt
 from django.utils import timezone
-from elasticsearch.exceptions import RequestError
+from elasticsearch.exceptions import NotFoundError
 
 def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None):
     '''
@@ -48,7 +48,7 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
         max_docs = num_docs + bulk_size if num_docs > bulk_size else bulk_size + 1
         for next_step in xrange(bulk_size, max_docs, bulk_size):
             logging.info('Indexing documents {} to {} of {} total on index {}.'.format(prev_step, next_step, num_docs, index_name))
-            bulk_index(src.get_es_instance(), [index_instance.serialize_object(doc) for doc in model_items[prev_step:next_step]], index=index_name, doc_type=model.__name__, raise_on_error=True)
+            bulk_index(src.get_es_instance(), [index_instance.serialize_object(doc) for doc in model_items[prev_step:next_step] if index_instance.matches_indexing_condition(doc)], index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
 
 def delete_index_item(item, model_name):
@@ -65,8 +65,8 @@ def delete_index_item(item, model_name):
         item_es_id = index_instance.fields['_id'].value(item)
         try:
             src.get_es_instance().delete(index_name, model_name, item_es_id)
-        except RequestError as e:
-            logging.warning('Could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
+        except NotFoundError as e:
+            logging.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
 
 def __str_to_tzdate__(date_str):
     return timezone.make_aware(parsedt(date_str), timezone.get_current_timezone())
