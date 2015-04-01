@@ -155,8 +155,9 @@ class Command(BaseCommand):
                         es.indices.put_mapping(model_name, src._idx_name_to_mdl_to_mdlidx[index][model_name].get_mapping(), index=index)
                     except Exception as e:
                         print e
-                        if raw_input('Something terrible happened! Type "continue" to continue updating the mappings') != 'continue':
+                        if raw_input('Something terrible happened! Type "abort" to stop updating the mappings: ') == 'abort':
                             raise e
+                        print 'Continuing.'
 
         else:
             if options['models']:
