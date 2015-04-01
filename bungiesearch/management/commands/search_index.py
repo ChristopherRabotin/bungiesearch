@@ -136,17 +136,28 @@ class Command(BaseCommand):
                 es.indices.create(index=index, body={'mappings': mapping})
 
         elif options['action'] == 'update-mapping':
-            if options['models']:
-                model = options['models']
-                for model_name in options['models'].split():
-                    for index in src.get_index(model_name):
-                        logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
-                        es.indices.put_mapping(model_name, src.get_model_index(model_name).get_mapping(), index=index)
+            if options['index']:
+                indices = [options['index']]
             else:
-                for model_name, model_idx in src._model_name_to_model_idx.iteritems():
-                    for index in src.get_index(model_name):
-                        logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
-                        es.indices.put_mapping(model_name, model_idx.get_mapping(), index=index)
+                indices = src.get_indices()
+            
+            if options['models']:
+                models = options['models'].split(',')
+            else:
+                models = []
+            
+            for index in indices:
+                for model_name in src._idx_name_to_mdl_to_mdlidx[index]:
+                    if models and model_name not in models:
+                        continue
+                    logging.info('Updating mapping of model/doctype {} on index {}.'.format(model_name, index))
+                    try:
+                        es.indices.put_mapping(model_name, src._idx_name_to_mdl_to_mdlidx[index][model_name].get_mapping(), index=index)
+                    except Exception as e:
+                        print e
+                        if raw_input('Something terrible happened! Type "abort" to stop updating the mappings: ') == 'abort':
+                            raise e
+                        print 'Continuing.'
 
         else:
             if options['models']:
