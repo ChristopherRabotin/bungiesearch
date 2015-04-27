@@ -344,7 +344,7 @@ class Bungiesearch(Search):
                 return results[0]
             except IndexError:
                 return []
-        return results[key.start:key.stop]
+        return results
 
     def hook_alias(self, alias, model_obj=None):
         '''
