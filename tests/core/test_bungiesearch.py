@@ -231,9 +231,10 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(src_item._meta.proxy_for_model, NoUpdatedField, 'Proxy for model of search item is not "NoUpdatedField".')
 
     def test_concat_queries(self):
-        items = Article.objects.bsearch_title_search('title')[::True] + NoUpdatedField.objects.search.query('match', title='My title')[::True]
-        for item in Bungiesearch.map_raw_results(sorted(items, key=attrgetter('title'))):
-            self.assertIn(type(item), [Article, NoUpdatedField], 'Got an unmapped item, or an item with an unexpected mapping.')
+        items = Article.objects.bsearch_title_search('title')[::False] + NoUpdatedField.objects.search.query('match', title='My title')[::False]
+        for item in items:
+            model = item._meta.proxy_for_model if item._meta.proxy_for_model else type(item)
+            self.assertIn(model, [Article, NoUpdatedField], 'Got an unmapped item ({}), or an item with an unexpected mapping.'.format(type(item)))
 
     def test_fun(self):
         '''
