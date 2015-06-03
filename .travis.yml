@@ -4,5 +4,7 @@ python:
 install: 
   - pip install .
   - pip install -r tests/requirements.txt
+services:
+  - elasticsearch
 script: 
   - python tests/manage.py test

@@ -26,10 +26,10 @@ DEBUG = True
 MIDDLEWARE_CLASSES = ()
 DEFAULT_INDEX_TABLESPACE = ''
 BUNGIESEARCH = {
-                'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
+                'URLS': ['localhost'],
                 'INDICES': {'bungiesearch_demo': 'core.search_indices',
                             'bungiesearch_demo_bis': 'core.search_indices_bis'},
                 'ALIASES': {'bsearch': 'core.search_aliases'},
                 'SIGNALS': {'BUFFER_SIZE': 1},
-                'ES_SETTINGS': {'http_auth': os.getenv('ELASTIC_SEARCH_AUTH')},
+                #'ES_SETTINGS': {'http_auth': os.getenv('ELASTIC_SEARCH_AUTH')},
                 }
