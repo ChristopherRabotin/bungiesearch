@@ -396,7 +396,7 @@ BUNGIESEARCH = {
 ```
 
 # Build Status
-![Travis image](https://travis-ci.org/afrancis13/bungiesearch.svg)
+![Travis image](https://travis-ci.org/afrancis13/bungiesearch.svg?branch=add_testing)
 
 # Testing
 All Bungiesearch tests are in `tests/core/test_bungiesearch.py`.

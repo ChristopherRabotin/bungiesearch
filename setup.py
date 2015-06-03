@@ -36,7 +36,6 @@ setup(
         where='.',
         exclude=('bungiesearch/tests',)
     ),
-    test_suite='tests',
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
