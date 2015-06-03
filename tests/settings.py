@@ -31,5 +31,4 @@ BUNGIESEARCH = {
                             'bungiesearch_demo_bis': 'core.search_indices_bis'},
                 'ALIASES': {'bsearch': 'core.search_aliases'},
                 'SIGNALS': {'BUFFER_SIZE': 1},
-                #'ES_SETTINGS': {'http_auth': os.getenv('ELASTIC_SEARCH_AUTH')},
                 }

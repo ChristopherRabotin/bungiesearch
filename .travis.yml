@@ -6,5 +6,6 @@ install:
   - pip install -r tests/requirements.txt
 services:
   - elasticsearch
-script: 
+script:
+  - export ELASTIC_SEARCH_URL=localhost
   - python tests/manage.py test
