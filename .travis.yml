@@ -1,6 +1,6 @@
 language: python
 python:
   - 2.7
+install: pip install -r tests/requirements.txt
 script: 
-  - flake8 .
-  - python setup.py test
+  - python tests/manage.py test
