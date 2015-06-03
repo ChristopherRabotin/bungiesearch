@@ -1,0 +1,11 @@
+language: python
+python:
+  - 2.7
+install: 
+  - pip install .
+  - pip install -r tests/requirements.txt
+services:
+  - elasticsearch
+script:
+  - export ELASTIC_SEARCH_URL=localhost
+  - python tests/manage.py test

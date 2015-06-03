@@ -395,6 +395,9 @@ BUNGIESEARCH = {
                 }
 ```
 
+# Build Status
+![Travis image](https://travis-ci.org/Sparrho/bungiesearch.svg)
+
 # Testing
 All Bungiesearch tests are in `tests/core/test_bungiesearch.py`.
 You can run the tests by creating a Python virtual environment, installing the requirements from `tests/requirements.txt`, installing the package (`pip install .`) and running `python tests/manage.py test`.
