@@ -3,7 +3,7 @@ bungiesearch
 cov-core==1.14.0
 coverage==3.7.1
 elasticsearch==1.2.0
--e git+https://github.com/elasticsearch/elasticsearch-dsl-py@9cf802968d857e9788a6ee2746423453bf16082f#egg=elasticsearch_dsl-master
+elasticsearch-dsl==0.0.3
 pytz==2014.7
 six==1.8.0
 urllib3==1.9

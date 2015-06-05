@@ -3,17 +3,18 @@ import sys
 from os.path import join, dirname
 from setuptools import setup, find_packages
 
-VERSION = (0, 1, 0)
+VERSION = (1, 0, 2)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
-long_description = 'Should have been loaded.'
+long_description = 'Should have been loaded from README.md.'
 with open(join(dirname(__file__), 'README.md')) as f:
     long_description = f.read().strip()
 
 
 install_requires = [
-    'django',
+    'django>=1.6',
+    'elasticsearch-dsl<0.0.4',
     'python-dateutil',
 ]
 
@@ -25,9 +26,9 @@ if sys.version_info[:2] == (2, 6):
 
 setup(
     name="bungiesearch",
-    description="A Django elasticsearch wrapper using elasticsearch's elasticsearch-dsl-py high level library.",
-    license="To be determined I guess",
-    url="https://github.com/sparrho/bungiesearch?",
+    description="A Django elasticsearch wrapper and helper using elasticsearch-dsl-py high level library.",
+    license="BSD-3",
+    url="https://github.com/sparrho/bungiesearch",
     long_description=long_description,
     version=__versionstr__,
     author="Christopher Rabotin",
@@ -37,11 +38,15 @@ setup(
         exclude=('bungiesearch/tests',)
     ),
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 3",
+        "Framework :: Django"
     ],
+    keywords="elasticsearch haystack django bungiesearch sparrho",
     install_requires=install_requires,
-    dependency_links = ['https://github.com/elasticsearch/elasticsearch-dsl-py#egg=elasticsearch-dsl-py'],
+    dependency_links=['https://github.com/elasticsearch/elasticsearch-dsl-py#egg=elasticsearch-dsl-py'],
 )
