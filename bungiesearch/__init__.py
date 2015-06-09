@@ -168,13 +168,13 @@ class Bungiesearch(Search):
             results = [None] * len(raw_results)
         found_results = {}
         for pos, result in enumerate(raw_results):
-            model_name = result._meta.doc_type
-            if model_name not in Bungiesearch._model_name_to_index or result._meta.index not in Bungiesearch._model_name_to_index[model_name]:
+            model_name = result.meta.doc_type
+            if model_name not in Bungiesearch._model_name_to_index or result.meta.index not in Bungiesearch._model_name_to_index[model_name]:
                 logging.warning('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
                 results[pos] = result
             else:
-                model_results['{}.{}'.format(result._meta.index, model_name)].append(result.id)
-                found_results['{1._meta.index}.{0}.{1.id}'.format(model_name, result)] = (pos, result._meta)
+                model_results['{}.{}'.format(result.meta.index, model_name)].append(result.id)
+                found_results['{1.meta.index}.{0}.{1.id}'.format(model_name, result)] = (pos, result.meta)
 
         # Now that we have model ids per model name, let's fetch everything at once.
         for ref_name, ids in model_results.iteritems():
