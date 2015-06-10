@@ -81,7 +81,7 @@ class ModelIndexTestCase(TestCase):
         Test searching and mapping.
         '''
         item = Article.objects.search.query('match', _all='Description')[:1:True]
-        self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a _meta attribute.')
+        self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
 
     def test_iteration(self):
         '''
