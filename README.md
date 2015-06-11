@@ -184,7 +184,7 @@ from datetime import datetime
 class ArticleIndex(ModelIndex):
 
     def matches_indexing_condition(self, item):
-        return item.updated < datetime.datetime(2015, 9, 21, 4, 29)
+        return item.updated < datetime.datetime(2015, 10, 21, 4, 29)
 
     class Meta:
         model = Article
