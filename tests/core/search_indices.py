@@ -26,7 +26,6 @@ class UserIndex(ModelIndex):
         model = User
         id_field = 'user_id'
         updated_field = 'updated'
-        exclude = ('description',)
         default = True
 
 

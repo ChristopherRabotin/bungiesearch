@@ -44,7 +44,6 @@ class ModelIndex(object):
         # We're duplicating it in order for devs to still perform searches on `.id` as expected.
         self.fields['_id'] = self.fields[id_field]
         self.fields_to_fetch = list(set(self.fields.keys()).union(additional_fields))
-
         # Adding or updating the fields which are defined at class level.
         for cls_attr, obj in self.__class__.__dict__.iteritems():
             if not isinstance(obj, AbstractField):

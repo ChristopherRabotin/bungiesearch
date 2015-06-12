@@ -273,7 +273,6 @@ class Bungiesearch(Search):
 
     def execute_raw(self):
         self.raw_results = super(Bungiesearch, self).execute()
-        self.raw_results = super(Bungiesearch, self).execute()
 
     def execute(self, return_results=True):
         '''
@@ -342,7 +341,10 @@ class Bungiesearch(Search):
                 single_item = False
         else:
             single_item = True
+        print ("KEY", key)
+        print super(Bungiesearch, self).__getitem__(key)
         results = super(Bungiesearch, self).__getitem__(key).execute()
+        print ("RESULTS", results)
         if single_item:
             try:
                 return results[0]

@@ -11,8 +11,6 @@ import pytz
 from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex, UserIndex
 
-from importlib import import_module
-
 
 class ModelIndexTestCase(TestCase):
     @classmethod
@@ -20,7 +18,7 @@ class ModelIndexTestCase(TestCase):
         # Let's start by creating the index and mapping.
         # If we create an object before the index, the index
         # will be created automatically, and we want to test the command.
-        #search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
 
         art_1 = {'title': 'Title one',
                  'description': 'Description of article 1.',
@@ -83,13 +81,12 @@ class ModelIndexTestCase(TestCase):
                                            '_id': {'type': 'integer'}, # This is the elastic search index.
                                            'published': {'type': 'date'}}
                            }
-        
         expected_user = {'properties': {'updated': {'type': 'date'},
+                                        'description': {'type': 'string', 'analyzer': 'snowball'},
                                         'user_id': {'analyzer': 'snowball', 'type': 'string'},
                                         'effective_date': {'type': 'date'},
                                         'created': {'type': 'date'},
                                         'name': {'analyzer': 'snowball', 'type': 'string'},
-                                        'updated': {'type': 'date'},
                                         '_id': {'analyzer': 'snowball', 'type': 'string'}}
                         }
 
@@ -102,6 +99,7 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
+        
         self.assertEqual(User.objects.search.query('match', _all='Description')[0], User.objects.get(user_id='bungie1'), 'Searching for "Description" did not return the User.')
         self.assertEqual(User.objects.search.query('match', _all='second user')[0], User.objects.get(user_id='bungie2'), 'Searching for "second user" did not return the User.')
 
@@ -111,6 +109,7 @@ class ModelIndexTestCase(TestCase):
         '''
         item = Article.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
+        
         item = User.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
 
@@ -118,12 +117,19 @@ class ModelIndexTestCase(TestCase):
         '''
         Tests iteration on Bungiesearch items.
         '''
-        lazy_search = Article.objects.search.query('match', title='title')
+        lazy_search_article = Article.objects.search.query('match', title='title')
         db_items = list(Article.objects.all())
-        self.assertTrue(all([result in db_items for result in lazy_search]), 'Searching for title "title" did not return all articles.')
-        self.assertTrue(all([result in db_items for result in lazy_search[:]]), 'Searching for title "title" did not return all articles when using empty slice.')
-        self.assertEqual(len(lazy_search[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
-        self.assertEqual(len(lazy_search[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
+        self.assertTrue(all([result in db_items for result in lazy_search_article]), 'Searching for title "title" did not return all articles.')
+        self.assertTrue(all([result in db_items for result in lazy_search_article[:]]), 'Searching for title "title" did not return all articles when using empty slice.')
+        self.assertEqual(len(lazy_search_article[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
+        self.assertEqual(len(lazy_search_article[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
+        
+        lazy_search_user = User.objects.search.query('match', description='user')
+        db_items = list(User.objects.all())
+        self.assertTrue(all([result in db_items for result in lazy_search_user]), 'Searching for description "user" did not return all articles.')
+        self.assertTrue(all([result in db_items for result in lazy_search_user[:]]), 'Searching for description "user" did not return all articles when using empty slice.')
+        self.assertEqual(len(lazy_search_user[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
+        self.assertEqual(len(lazy_search_user[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
 
     def test_no_results(self):
         '''
@@ -131,6 +137,9 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(list(Article.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
         self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing" did not return an empty list on get item call.')
+        
+        self.assertEqual(list(User.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
+        self.assertEqual(list(User.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
 
     def test_custom_search(self):
         '''
@@ -141,20 +150,30 @@ class ModelIndexTestCase(TestCase):
         db_art1 = Article.objects.get(title='Title one')
         es_art2 = search.query('match', _all='second article')[0]
         db_art2 = Article.objects.get(title='Title two')
-        self.assertTrue(all([es_art1.authors == db_art1.authors, es_art1.title == db_art1.title, es_art1.description == db_art1.description]), 'Searching for "Description" did not return the first Article.')
-        self.assertTrue(all([es_art2.authors == db_art2.authors, es_art2.title == db_art2.title, es_art2.description == db_art2.description]), 'Searching for "second article" did not return the second Article.')
+        self.assertTrue(all([es_art1.id == db_art1.id, es_art1.title == db_art1.title, es_art1.description == db_art1.description]), 'Searching for "Description" did not return the first Article.')
+        self.assertTrue(all([es_art2.id == db_art2.id, es_art2.title == db_art2.title, es_art2.description == db_art2.description]), 'Searching for "second article" did not return the second Article.')
+
+        search = User.objects.custom_search(index='bungiesearch_demo', doc_type='User')
+        es_user1 = search.query('match', _all='Description')[0]
+        db_user1 = User.objects.get(user_id='bungie1')
+        self.assertRaises(AttributeError, getattr, es_user1, 'id')
+        self.assertTrue(all([es_user1.user_id == db_user1.user_id, es_user1.description == db_user1.description]), 'Searching for "Description" did not return the first User.')
 
     def test_get_model(self):
         '''
         Test model mapping.
         '''
         self.assertEqual(ArticleIndex().get_model(), Article, 'Model was not Article.')
+        self.assertEqual(UserIndex().get_model(), User, 'Model was not User')
 
     def test_cloning(self):
         '''
         Tests that Bungiesearch remains lazy with specific function which should return clones.
         '''
         inst = Article.objects.search.query('match', _all='Description')
+        self.assertIsInstance(inst.only('_id'), inst.__class__, 'Calling `only` does not return a clone of itself.')
+
+        inst = User.objects.search.query('match', _all='Description')
         self.assertIsInstance(inst.only('_id'), inst.__class__, 'Calling `only` does not return a clone of itself.')
 
     def test_search_alias_exceptions(self):
@@ -217,6 +236,7 @@ class ModelIndexTestCase(TestCase):
                                   'published': pytz.UTC.localize(datetime.strptime('2020-09-15', '%Y-%m-%d')),
                                   'description': 'Description of article 1.',
                                   'title': 'Title one',
+                                  'authors': '',
                                   'meta_data': 'http://example.com/article_1 20',
                                   'link': 'http://example.com/article_1',
                                   'tweet_count': 20,
@@ -226,6 +246,7 @@ class ModelIndexTestCase(TestCase):
                                   'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
                                   'description': 'This is a second article.',
                                   'title': 'Title two',
+                                  'authors': '',
                                   'meta_data': 'http://example.com/article_1/page2 20',
                                   'link': 'http://example.com/article_1/page2',
                                   'tweet_count': 20,
