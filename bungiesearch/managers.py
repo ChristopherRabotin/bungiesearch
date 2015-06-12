@@ -8,7 +8,6 @@ class BungiesearchManager(Manager):
     @property
     def search(self):
         from bungiesearch import Bungiesearch
-        print Bungiesearch.get_index(self.model, via_class=True)
         return Bungiesearch().index(*Bungiesearch.get_index(self.model, via_class=True)).doc_type(self.model.__name__)
 
     def search_index(self, index):

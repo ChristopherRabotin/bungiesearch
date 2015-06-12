@@ -173,11 +173,13 @@ class Bungiesearch(Search):
                 logging.warning('Returned object of type {} ({}) is not defined in the settings, or is not associated to the same index as in the settings.'.format(model_name, result))
                 results[pos] = result
             else:
-                meta = Bungiesearch.get_model_index(model_name).Meta
-                id_field = getattr(meta, 'id_field', 'id') 
-                result_id = getattr(result, str(id_field))
-                model_results['{}.{}'.format(result.meta.index, model_name)].append(result_id)
-                found_results['{1.meta.index}.{0}.{2}'.format(model_name, result, result_id)] = (pos, result.meta)
+                model_results['{}.{}'.format(result.meta.index, model_name)].append(result.id)
+                found_results['{1.meta.index}.{0}.{1.id}'.format(model_name, result)] = (pos, result.meta)
+                #meta = Bungiesearch.get_model_index(model_name).Meta
+                #id_field = getattr(meta, 'id_field', 'id') 
+                #result_id = getattr(result, str(id_field))
+                #model_results['{}.{}'.format(result.meta.index, model_name)].append(result_id)
+                #found_results['{1.meta.index}.{0}.{2}'.format(model_name, result, result_id)] = (pos, result.meta)
 
         # Now that we have model ids per model name, let's fetch everything at once.
         for ref_name, ids in model_results.iteritems():
@@ -341,10 +343,7 @@ class Bungiesearch(Search):
                 single_item = False
         else:
             single_item = True
-        print ("KEY", key)
-        print super(Bungiesearch, self).__getitem__(key)
         results = super(Bungiesearch, self).__getitem__(key).execute()
-        print ("RESULTS", results)
         if single_item:
             try:
                 return results[0]
