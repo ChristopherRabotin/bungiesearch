@@ -1,7 +1,7 @@
 from bungiesearch.fields import DateField, StringField
 from bungiesearch.indices import ModelIndex
 
-from core.models import Article, NoUpdatedField
+from core.models import Article, User, NoUpdatedField
 
 
 class ArticleIndex(ModelIndex):
@@ -17,6 +17,18 @@ class ArticleIndex(ModelIndex):
                     'description': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
         default = True
+
+
+class UserIndex(ModelIndex):
+    effective_date = DateField(eval_as='obj.created if obj.created and obj.updated > obj.created else obj.updated')
+
+    class Meta:
+        model = User
+        id_field = 'user_id'
+        updated_field = 'updated'
+        exclude = ('description',)
+        default = True
+
 
 class NoUpdatedFieldIndex(ModelIndex):
     class Meta:

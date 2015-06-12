@@ -8,8 +8,10 @@ from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
 
-from core.models import Article, Unmanaged, NoUpdatedField, ManangedButEmpty
-from core.search_indices import ArticleIndex
+from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
+from core.search_indices import ArticleIndex, UserIndex
+
+from importlib import import_module
 
 
 class ModelIndexTestCase(TestCase):
@@ -18,7 +20,7 @@ class ModelIndexTestCase(TestCase):
         # Let's start by creating the index and mapping.
         # If we create an object before the index, the index
         # will be created automatically, and we want to test the command.
-        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        #search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
 
         art_1 = {'title': 'Title one',
                  'description': 'Description of article 1.',
@@ -31,15 +33,29 @@ class ModelIndexTestCase(TestCase):
                  'positive_feedback': 50,
                  'negative_feedback': 5,
                  }
+
+        user_1 = {'user_id': 'bungie1',
+                  'description': 'Description of user 1',
+                  'created': pytz.UTC.localize(datetime(year=2015, month=1, day=1)),
+                  'updated': pytz.UTC.localize(datetime(year=2015, month=6, day=1)),
+                 }
+
         Article.objects.create(**art_1)
+        User.objects.create(**user_1)
 
         art_2 = dict((k, v) for k, v in art_1.iteritems())
         art_2['link'] += '/page2'
         art_2['title'] = 'Title two'
         art_2['description'] = 'This is a second article.'
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
-        Article.objects.create(**art_2)
 
+        user_2 = dict((k, v) for k, v in user_1.iteritems())
+        user_2['user_id'] = 'bungie2'
+        user_2['description'] = 'This is the second user'
+        user_2['created'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
+        
+        Article.objects.create(**art_2)
+        User.objects.create(**user_2)
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
@@ -54,20 +70,31 @@ class ModelIndexTestCase(TestCase):
         '''
         Check that the mapping is the expected one.
         '''
-        expected = {'properties': {'updated': {'type': 'date', 'null_value': '2013-07-01'},
-                                   'description': {'type': 'string', 'boost': 1.35, 'analyzer': 'snowball'},
-                                   'created': {'type': 'date'},
-                                   'title': {'type': 'string', 'boost': 1.75, 'analyzer': 'snowball'},
-                                   'authors': {'type': 'string', 'analyzer': 'snowball'},
-                                   'meta_data': {'type': 'string', 'analyzer': 'snowball'},
-                                   'link': {'type': 'string', 'analyzer': 'snowball'},
-                                   'effective_date': {'type': 'date'},
-                                   'tweet_count': {'type': 'integer'},
-                                   'id': {'type': 'integer'},
-                                   '_id': {'type': 'integer'}, # This is the elastic search index.
-                                   'published': {'type': 'date'}}
-                    }
-        self.assertEqual(ArticleIndex().get_mapping(), expected, 'Got an unexpected mapping.')
+        expected_article = {'properties': {'updated': {'type': 'date', 'null_value': '2013-07-01'},
+                                           'description': {'type': 'string', 'boost': 1.35, 'analyzer': 'snowball'},
+                                           'created': {'type': 'date'},
+                                           'title': {'type': 'string', 'boost': 1.75, 'analyzer': 'snowball'},
+                                           'authors': {'type': 'string', 'analyzer': 'snowball'},
+                                           'meta_data': {'type': 'string', 'analyzer': 'snowball'},
+                                           'link': {'type': 'string', 'analyzer': 'snowball'},
+                                           'effective_date': {'type': 'date'},
+                                           'tweet_count': {'type': 'integer'},
+                                           'id': {'type': 'integer'},
+                                           '_id': {'type': 'integer'}, # This is the elastic search index.
+                                           'published': {'type': 'date'}}
+                           }
+        
+        expected_user = {'properties': {'updated': {'type': 'date'},
+                                        'user_id': {'analyzer': 'snowball', 'type': 'string'},
+                                        'effective_date': {'type': 'date'},
+                                        'created': {'type': 'date'},
+                                        'name': {'analyzer': 'snowball', 'type': 'string'},
+                                        'updated': {'type': 'date'},
+                                        '_id': {'analyzer': 'snowball', 'type': 'string'}}
+                        }
+
+        self.assertEqual(ArticleIndex().get_mapping(), expected_article)
+        self.assertEqual(UserIndex().get_mapping(), expected_user)
 
     def test_fetch_item(self):
         '''
@@ -75,12 +102,16 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
+        self.assertEqual(User.objects.search.query('match', _all='Description')[0], User.objects.get(user_id='bungie1'), 'Searching for "Description" did not return the User.')
+        self.assertEqual(User.objects.search.query('match', _all='second user')[0], User.objects.get(user_id='bungie2'), 'Searching for "second user" did not return the User.')
 
     def test_raw_fetch(self):
         '''
         Test searching and mapping.
         '''
         item = Article.objects.search.query('match', _all='Description')[:1:True]
+        self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
+        item = User.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
 
     def test_iteration(self):
@@ -110,8 +141,8 @@ class ModelIndexTestCase(TestCase):
         db_art1 = Article.objects.get(title='Title one')
         es_art2 = search.query('match', _all='second article')[0]
         db_art2 = Article.objects.get(title='Title two')
-        self.assertTrue(all([es_art1.id == db_art1.id, es_art1.title == db_art1.title, es_art1.description == db_art1.description]), 'Searching for "Description" did not return the first Article.')
-        self.assertTrue(all([es_art2.id == db_art2.id, es_art2.title == db_art2.title, es_art2.description == db_art2.description]), 'Searching for "second article" did not return the second Article.')
+        self.assertTrue(all([es_art1.authors == db_art1.authors, es_art1.title == db_art1.title, es_art1.description == db_art1.description]), 'Searching for "Description" did not return the first Article.')
+        self.assertTrue(all([es_art2.authors == db_art2.authors, es_art2.title == db_art2.title, es_art2.description == db_art2.description]), 'Searching for "second article" did not return the second Article.')
 
     def test_get_model(self):
         '''
@@ -186,7 +217,6 @@ class ModelIndexTestCase(TestCase):
                                   'published': pytz.UTC.localize(datetime.strptime('2020-09-15', '%Y-%m-%d')),
                                   'description': 'Description of article 1.',
                                   'title': 'Title one',
-                                  'authors': '',
                                   'meta_data': 'http://example.com/article_1 20',
                                   'link': 'http://example.com/article_1',
                                   'tweet_count': 20,
@@ -196,7 +226,6 @@ class ModelIndexTestCase(TestCase):
                                   'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
                                   'description': 'This is a second article.',
                                   'title': 'Title two',
-                                  'authors': '',
                                   'meta_data': 'http://example.com/article_1/page2 20',
                                   'link': 'http://example.com/article_1/page2',
                                   'tweet_count': 20,
