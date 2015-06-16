@@ -1,4 +1,4 @@
-from django.db.models import Manager, signals
+from django.db.models import Manager
 import logging
 
 class BungiesearchManager(Manager):
@@ -27,12 +27,11 @@ class BungiesearchManager(Manager):
         super(BungiesearchManager, self).__init__(**kwargs)
 
         from . import Bungiesearch
-        from .signals import post_save_connector, pre_delete_connector
+        from .signals import get_signal_processor
         settings = Bungiesearch.BUNGIE
         if 'SIGNALS' in settings:
-            signals.post_save.connect(post_save_connector, sender=self.model)
-            signals.pre_delete.connect(pre_delete_connector, sender=self.model)
-        Bungiesearch._managed_models.append(self.model)
+            self.signal_processor = get_signal_processor()
+            self.signal_processor.setup(model=self.model)
 
     def __getattr__(self, alias):
         '''
