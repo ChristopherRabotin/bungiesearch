@@ -1,5 +1,11 @@
+from _collections import defaultdict
+
 from django.db.models import signals
 
+from bungiesearch import Bungiesearch
+from bungiesearch.utils import update_index, delete_index_item
+
+__items_to_be_indexed__ = defaultdict(list)
 class BungieTestSignalProcessor(object):
 
     def handle_save(self, sender, instance, **kwargs):
@@ -29,9 +35,9 @@ class BungieTestSignalProcessor(object):
         delete_index_item(instance, sender.__name__)
 
     def setup(self, model):
-        signals.post_save.connect(self.handle_save)
-        signals.pre_delete.connect(self.handle_delete)
+        signals.post_save.connect(self.handle_save, sender=model)
+        signals.pre_delete.connect(self.handle_delete, sender=model)
 
     def teardown(self):
-        signals.pre_delete.disconnect(self.handle_delete)
-        signals.post_save.disconnect(self.handle_save)
+        signals.pre_delete.disconnect(self.handle_delete, sender=model)
+        signals.post_save.disconnect(self.handle_save, sender=model)
