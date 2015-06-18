@@ -291,7 +291,7 @@ In the example above, each search alias defined in `myproject.search_aliases` wi
 The purpose is to not accidently overwrite Django's default manager functions with search aliases.
 
 ### SIGNALS
-*Optional:* if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager. One may also define a signal processor class for more custom functionality by placing the string value of the module path under a key called `CLASS_NAME` in the dictionary value of `SIGNALS` and defining a `setup` method that connects to django signals (signals are connected to each model which uses a BungiesearchManager).
+*Optional:* if it exists, it must be a dictionary (even empty), and will connect to the `post save` and `pre delete` model functions of *all* models using `bungiesearch.managers.BungiesearchManager` as a manager. One may also define a signal processor class for more custom functionality by placing the string value of the module path under a key called `SIGNAL_CLASS` in the dictionary value of `SIGNALS` and defining `setup` and `teardown` methods, which take `model` as the only parameter. These methods connect and disconnect the signal processing class to django signals (signals are connected to each model which uses a BungiesearchManager).
 
 If `SIGNALS` is not defined in the settings, *none* of the models managed by BungiesearchManager will automatically update the index when a new item is created or deleted.
 

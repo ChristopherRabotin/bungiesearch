@@ -4,6 +4,7 @@ import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Make sure the copy of seeker in the directory above this one is used.
+
 sys.path.insert(0, BASE_DIR)
 SECRET_KEY = 'cookies_are_delicious_delicacies'
 INSTALLED_APPS = (

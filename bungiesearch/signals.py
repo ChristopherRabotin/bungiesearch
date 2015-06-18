@@ -9,13 +9,10 @@ from .utils import update_index, delete_index_item
 def get_signal_processor():
     signals = Bungiesearch.BUNGIE['SIGNALS']
     if 'SIGNAL_CLASS' in signals:
-        module_str      = signals['SIGNAL_CLASS']
-        signal_module   = import_module(module_str)
-        signal_instance = signal_module()
+        signal_module = import_module(signals['SIGNAL_CLASS'])
     else:
-        signal_instance = BungieSignalProcessor()
-
-    return signal_instance
+        signal_module = BungieSignalProcessor
+    return signal_module()
 
 __items_to_be_indexed__ = defaultdict(list)
 class BungieSignalProcessor(object):
@@ -51,5 +48,5 @@ class BungieSignalProcessor(object):
         signals.pre_delete.connect(self.pre_delete_connector, sender=model)
 
     def teardown(self, model):
-        signals.post_save.disconnect(self.post_save_connector, sender=model)
         signals.pre_delete.disconnect(self.pre_delete_connector, sender=model)
+        signals.post_save.disconnect(self.post_save_connector, sender=model)
