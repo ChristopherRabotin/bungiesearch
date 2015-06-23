@@ -11,7 +11,7 @@ from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmp
 from core.search_indices import ArticleIndex, UserIndex
 
 
-class BungieSearchFullTestCase(TestCase):
+class CoreTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         # Let's start by creating the index and mapping.
@@ -211,16 +211,15 @@ class BungieSearchFullTestCase(TestCase):
 
     def test_post_save(self):
         art = {'title': 'Title three',
-                 'description': 'Postsave',
-                 'link': 'http://example.com/sparrho',
-                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
-                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
-                 'tweet_count': 20,
-                 'source_hash': 159159159159,
-                 'missing_data': '',
-                 'positive_feedback': 50,
-                 'negative_feedback': 5,
-                 }
+               'description': 'Postsave',
+               'link': 'http://example.com/sparrho',
+               'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+               'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+               'tweet_count': 20,
+               'source_hash': 159159159159,
+               'missing_data': '',
+               'positive_feedback': 50,
+               'negative_feedback': 5}
         obj = Article.objects.create(**art)
         print 'Sleeping two seconds for Elasticsearch to index new item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
@@ -232,62 +231,6 @@ class BungieSearchFullTestCase(TestCase):
         obj.delete()
         print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
-
-    def test_post_save_custom_class(self):
-        Bungiesearch.BUNGIE['SIGNALS']['SIGNAL_CLASS'] = 'core.bungie_signal.BungieTestSignalProcessor'
-        art = {'title': 'Title four',
-                 'description': 'Postsave custom signal processing class',
-                 'link': 'http://example.com/sparrho',
-                 'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
-                 'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
-                 'tweet_count': 20,
-                 'source_hash': 159159159159,
-                 'missing_data': '',
-                 'positive_feedback': 50,
-                 'negative_feedback': 5,
-                 }
-        obj = Article.objects.create(**art)
-        print 'Sleeping two seconds for Elasticsearch to index new item.'
-        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
-        find_four = Article.objects.search.query('match', title='four')
-        self.assertEqual(len(find_four), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_four))
-        # Let's check that both returned items are from different indices.
-        self.assertNotEqual(find_four[0:1:True].meta.index, find_four[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
-        # Let's now delete this object to test the post delete signal.
-        obj.delete()
-        del Bungiesearch.BUNGIE['SIGNALS']['SIGNAL_CLASS']
-        print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
-        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
-
-    def test_serialize_object(self):
-        expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
-                                  'published': pytz.UTC.localize(datetime.strptime('2020-09-15', '%Y-%m-%d')),
-                                  'description': 'Description of article 1.',
-                                  'title': 'Title one',
-                                  'authors': '',
-                                  'meta_data': 'http://example.com/article_1 20',
-                                  'link': 'http://example.com/article_1',
-                                  'tweet_count': 20,
-                                  'id': 1,
-                                  'text_field': ''
-                                  },
-                    'Title two': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
-                                  'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
-                                  'description': 'This is a second article.',
-                                  'title': 'Title two',
-                                  'authors': '',
-                                  'meta_data': 'http://example.com/article_1/page2 20',
-                                  'link': 'http://example.com/article_1/page2',
-                                  'tweet_count': 20,
-                                  'id': 2,
-                                  'text_field': None
-                                  }
-                    }
-
-        for obj in Article.objects.all():
-            for key, value in ArticleIndex().serialize_object(obj).iteritems():
-                if key in expected[obj.title]:
-                    self.assertEqual(expected[obj.title][key], value, 'Got {} expected {} for key {} in {}.'.format(value, expected[obj.title][key], key, obj.title))
 
     def test_manager_interference(self):
         '''
@@ -352,3 +295,81 @@ class BungieSearchFullTestCase(TestCase):
         missing = Article.objects.search_index('bungiesearch_demo').filter('missing', field='text_field')
         self.assertEqual(len(missing), 1, 'Filtering by missing text_field does not return exactly one item.')
         self.assertEqual(missing[0].text_field, None, 'The item with missing text_field does not have text_field=None.')
+
+class SignalTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        Bungiesearch.BUNGIE['SIGNALS']['SIGNAL_CLASS'] = 'core.bungie_signal.BungieTestSignalProcessor'
+        # Let's force the connection of the signal.
+        Article.objects.__init__()
+
+    @classmethod
+    def tearDownClass(cls):
+        search_index.Command().run_from_argv(['tests', 'empty_arg', '--delete', '--guilty-as-charged'])
+
+    def test_post_save_custom_class(self):
+        Bungiesearch.BUNGIE['SIGNALS']['SIGNAL_CLASS'] = 'core.bungie_signal.BungieTestSignalProcessor'
+        art = {'title': 'Title four',
+               'description': 'Postsave custom signal processing class',
+               'link': 'http://example.com/sparrho',
+               'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
+               'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
+               'tweet_count': 20,
+               'source_hash': 159159159159,
+               'missing_data': '',
+               'positive_feedback': 50,
+               'negative_feedback': 5}
+        try:
+            obj = Article.objects.create(**art)
+        except RuntimeWarning as w:
+            self.assertEqual(str(w), 'Handle save called.' , 'The Runtime warning was not the one expected: {}.'.format(w))
+        else:
+            self.fail('Creating/saving an item with the test signal processor did not raise a runtime warning.')
+        print 'Sleeping two seconds for Elasticsearch to index new item.'
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
+        find_four = Article.objects.search.query('match', title='four')
+        self.assertEqual(len(find_four), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_four))
+        # Let's check that both returned items are from different indices.
+        self.assertNotEqual(find_four[0:1:True].meta.index, find_four[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
+        # Let's now delete this object to test the post delete signal.
+        try:
+            obj.delete()
+        except RuntimeWarning as w:
+            self.assertEqual(str(w), 'Handle delete called.' , 'The Runtime warning was not the one expected: {}.'.format(w))
+        else:
+            self.fail('Deleting an item with the test signal processor did not raise a runtime warning.')
+
+        del Bungiesearch.BUNGIE['SIGNALS']['SIGNAL_CLASS']
+        print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
+        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
+
+    def test_serialize_object(self):
+        expected = {'Title one': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
+                                  'published': pytz.UTC.localize(datetime.strptime('2020-09-15', '%Y-%m-%d')),
+                                  'description': 'Description of article 1.',
+                                  'title': 'Title one',
+                                  'authors': '',
+                                  'meta_data': 'http://example.com/article_1 20',
+                                  'link': 'http://example.com/article_1',
+                                  'tweet_count': 20,
+                                  'id': 1,
+                                  'text_field': ''
+                                  },
+                    'Title two': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
+                                  'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
+                                  'description': 'This is a second article.',
+                                  'title': 'Title two',
+                                  'authors': '',
+                                  'meta_data': 'http://example.com/article_1/page2 20',
+                                  'link': 'http://example.com/article_1/page2',
+                                  'tweet_count': 20,
+                                  'id': 2,
+                                  'text_field': None
+                                  }
+                    }
+
+        for obj in Article.objects.all():
+            for key, value in ArticleIndex().serialize_object(obj).iteritems():
+                if key in expected[obj.title]:
+                    self.assertEqual(expected[obj.title][key], value, 'Got {} expected {} for key {} in {}.'.format(value, expected[obj.title][key], key, obj.title))

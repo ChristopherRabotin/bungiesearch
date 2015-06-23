@@ -3,8 +3,8 @@ from elasticsearch_dsl.search import Search
 from importlib import import_module
 import logging
 
-from bungiesearch.indices import ModelIndex
 from bungiesearch.aliases import SearchAlias
+from bungiesearch.indices import ModelIndex
 import bungiesearch.managers
 from django.conf import settings
 from elasticsearch.client import Elasticsearch
@@ -174,7 +174,7 @@ class Bungiesearch(Search):
                 results[pos] = result
             else:
                 meta = Bungiesearch.get_model_index(model_name).Meta
-                id_field = getattr(meta, 'id_field', 'id') 
+                id_field = getattr(meta, 'id_field', 'id')
                 result_id = getattr(result, str(id_field))
                 model_results['{}.{}'.format(result.meta.index, model_name)].append(result_id)
                 found_results['{1.meta.index}.{0}.{2}'.format(model_name, result, result_id)] = (pos, result.meta)

@@ -1,10 +1,11 @@
 from _collections import defaultdict
+from importlib import import_module
 
 from django.db.models import signals
-from importlib import import_module
 
 from . import Bungiesearch
 from .utils import update_index, delete_index_item
+
 
 def get_signal_processor():
     signals = Bungiesearch.BUNGIE['SIGNALS']
@@ -36,7 +37,7 @@ class BungieSignalProcessor(object):
             update_index(__items_to_be_indexed__[sender], sender.__name__, buffer_size)
             # Let's now empty this buffer or we'll end up reindexing every item which was previously buffered.
             __items_to_be_indexed__[sender] = []
-    
+
     def pre_delete_connector(self, sender, instance, **kwargs):
         try:
             Bungiesearch.get_index(sender, via_class=True)
@@ -44,7 +45,7 @@ class BungieSignalProcessor(object):
             return # This model is not managed by Bungiesearch.
 
         delete_index_item(instance, sender.__name__)
-    
+
     def setup(self, model):
         signals.post_save.connect(self.post_save_connector, sender=model)
         signals.pre_delete.connect(self.pre_delete_connector, sender=model)

@@ -140,12 +140,12 @@ class Command(BaseCommand):
                 indices = [options['index']]
             else:
                 indices = src.get_indices()
-            
+
             if options['models']:
                 models = options['models'].split(',')
             else:
                 models = []
-            
+
             for index in indices:
                 for model_name in src._idx_name_to_mdl_to_mdlidx[index]:
                     if models and model_name not in models:

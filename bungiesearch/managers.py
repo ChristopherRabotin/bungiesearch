@@ -1,5 +1,7 @@
-from django.db.models import Manager
 import logging
+
+from django.db.models import Manager
+
 
 class BungiesearchManager(Manager):
     '''
@@ -31,7 +33,7 @@ class BungiesearchManager(Manager):
         settings = Bungiesearch.BUNGIE
         if 'SIGNALS' in settings:
             self.signal_processor = get_signal_processor()
-            self.signal_processor.setup(model=self.model)
+            self.signal_processor.setup(self.model)
 
     def __getattr__(self, alias):
         '''

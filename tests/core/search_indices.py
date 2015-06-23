@@ -32,6 +32,6 @@ class UserIndex(ModelIndex):
 class NoUpdatedFieldIndex(ModelIndex):
     class Meta:
         model = NoUpdatedField
-        exclude = ('description', )
+        exclude = ('description',)
         optimize_queries = True
         indexing_query = NoUpdatedField.objects.defer(*exclude).select_related().all()
