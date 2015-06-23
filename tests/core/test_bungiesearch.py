@@ -71,6 +71,7 @@ class BungieSearchFullTestCase(TestCase):
         '''
         expected_article = {'properties': {'updated': {'type': 'date', 'null_value': '2013-07-01'},
                                            'description': {'type': 'string', 'boost': 1.35, 'analyzer': 'snowball'},
+                                           'text_field': {'type': 'string', 'analyzer': 'snowball'},
                                            'created': {'type': 'date'},
                                            'title': {'type': 'string', 'boost': 1.75, 'analyzer': 'snowball'},
                                            'authors': {'type': 'string', 'analyzer': 'snowball'},
@@ -322,10 +323,6 @@ class BungieSearchFullTestCase(TestCase):
         self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')
 
     def test_None_as_missing(self):
-        missing = Article.objects.search.filter('missing', field='text_field')
+        missing = Article.objects.search_index('bungiesearch_demo').filter('missing', field='text_field')
         self.assertEqual(len(missing), 1, 'Filtering by missing text_field does not return exactly one item.')
-        self.assertEqual(missing[0].id, 1, 'The item with missing text_field is not Article id=1.')
-        
-        missing_and_empty = Article.objects.search.filter('missing', field='text_field', existence=True)
-        self.assertEqual(len(missing_and_empty), 2, 'Filtering by missing with existence check on text_field does not return exactly two item.')
-        self.assertListEqual(sorted([item.id for item in missing_and_empty]), [1, 2], 'Not all two Article items returned when filtering by missing with existence on text_field.')
+        self.assertEqual(missing[0].text_field, None, 'The item with missing text_field does not have text_field=None.')
