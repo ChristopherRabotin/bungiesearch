@@ -5,6 +5,7 @@ class Article(models.Model):
     title = models.TextField(db_index=True)
     authors = models.TextField(blank=True)
     description = models.TextField(blank=True)
+    text_field = models.TextField(null=True)
     link = models.URLField(max_length=510, unique=True, db_index=True)
     published = models.DateTimeField(null=True)
     created = models.DateTimeField(auto_now_add=True)

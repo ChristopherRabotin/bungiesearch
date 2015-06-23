@@ -1,5 +1,4 @@
 from datetime import datetime
-from operator import attrgetter
 from time import sleep
 
 from bungiesearch import Bungiesearch
@@ -12,7 +11,7 @@ from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmp
 from core.search_indices import ArticleIndex, UserIndex
 
 
-class ModelIndexTestCase(TestCase):
+class BungieSearchFullTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         # Let's start by creating the index and mapping.
@@ -22,6 +21,7 @@ class ModelIndexTestCase(TestCase):
 
         art_1 = {'title': 'Title one',
                  'description': 'Description of article 1.',
+                 'text_field': '',
                  'link': 'http://example.com/article_1',
                  'published': pytz.UTC.localize(datetime(year=2020, month=9, day=15)),
                  'updated': pytz.UTC.localize(datetime(year=2014, month=9, day=10)),
@@ -45,13 +45,14 @@ class ModelIndexTestCase(TestCase):
         art_2['link'] += '/page2'
         art_2['title'] = 'Title two'
         art_2['description'] = 'This is a second article.'
+        art_2['text_field'] = None
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
 
         user_2 = dict((k, v) for k, v in user_1.iteritems())
         user_2['user_id'] = 'bungie2'
         user_2['description'] = 'This is the second user'
         user_2['created'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
-        
+
         Article.objects.create(**art_2)
         User.objects.create(**user_2)
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
@@ -99,7 +100,7 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
-        
+
         self.assertEqual(User.objects.search.query('match', _all='Description')[0], User.objects.get(user_id='bungie1'), 'Searching for "Description" did not return the User.')
         self.assertEqual(User.objects.search.query('match', _all='second user')[0], User.objects.get(user_id='bungie2'), 'Searching for "second user" did not return the User.')
 
@@ -109,7 +110,7 @@ class ModelIndexTestCase(TestCase):
         '''
         item = Article.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
-        
+
         item = User.objects.search.query('match', _all='Description')[:1:True]
         self.assertTrue(hasattr(item, 'meta'), 'Fetching first raw results did not return an object with a meta attribute.')
 
@@ -123,7 +124,7 @@ class ModelIndexTestCase(TestCase):
         self.assertTrue(all([result in db_items for result in lazy_search_article[:]]), 'Searching for title "title" did not return all articles when using empty slice.')
         self.assertEqual(len(lazy_search_article[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
         self.assertEqual(len(lazy_search_article[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
-        
+
         lazy_search_user = User.objects.search.query('match', description='user')
         db_items = list(User.objects.all())
         self.assertTrue(all([result in db_items for result in lazy_search_user]), 'Searching for description "user" did not return all articles.')
@@ -137,7 +138,7 @@ class ModelIndexTestCase(TestCase):
         '''
         self.assertEqual(list(Article.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
         self.assertEqual(Article.objects.search.query('match', _all='nothing')[:10], [], 'Searching for "nothing" did not return an empty list on get item call.')
-        
+
         self.assertEqual(list(User.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
         self.assertEqual(list(User.objects.search.query('match', _all='nothing')), [], 'Searching for "nothing" did not return an empty list on iterator call.')
 
@@ -241,6 +242,7 @@ class ModelIndexTestCase(TestCase):
                                   'link': 'http://example.com/article_1',
                                   'tweet_count': 20,
                                   'id': 1,
+                                  'text_field': ''
                                   },
                     'Title two': {'updated': pytz.UTC.localize(datetime.strptime('2014-09-10', '%Y-%m-%d')),
                                   'published': pytz.UTC.localize(datetime.strptime('2010-09-15', '%Y-%m-%d')),
@@ -251,6 +253,7 @@ class ModelIndexTestCase(TestCase):
                                   'link': 'http://example.com/article_1/page2',
                                   'tweet_count': 20,
                                   'id': 2,
+                                  'text_field': None
                                   }
                     }
 
@@ -317,3 +320,12 @@ class ModelIndexTestCase(TestCase):
         self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo_bis').count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database.')
         self.assertEqual(NoUpdatedField.objects.count(), NoUpdatedField.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for NoUpdatedField does not match number in database.')
         self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')
+
+    def test_None_as_missing(self):
+        missing = Article.objects.search.filter('missing', field='text_field')
+        self.assertEqual(len(missing), 1, 'Filtering by missing text_field does not return exactly one item.')
+        self.assertEqual(missing[0].id, 1, 'The item with missing text_field is not Article id=1.')
+        
+        missing_and_empty = Article.objects.search.filter('missing', field='text_field', existence=True)
+        self.assertEqual(len(missing_and_empty), 2, 'Filtering by missing with existence check on text_field does not return exactly two item.')
+        self.assertListEqual(sorted([item.id for item in missing_and_empty]), [1, 2], 'Not all two Article items returned when filtering by missing with existence on text_field.')
