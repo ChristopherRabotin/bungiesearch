@@ -9,7 +9,6 @@ __items_to_be_indexed__ = defaultdict(list)
 class BungieTestSignalProcessor(object):
 
     def handle_save(self, sender, instance, **kwargs):
-        del kwargs
         try:
             Bungiesearch.get_index(sender, via_class=True)
         except KeyError:
@@ -30,7 +29,6 @@ class BungieTestSignalProcessor(object):
         raise RuntimeWarning('Handle save called.')
 
     def handle_delete(self, sender, instance, **kwargs):
-        del kwargs
         try:
             Bungiesearch.get_index(sender, via_class=True)
         except KeyError:
