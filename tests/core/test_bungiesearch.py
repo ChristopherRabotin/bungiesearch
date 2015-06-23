@@ -244,13 +244,10 @@ class ModelIndexTestCase(TestCase):
                  'positive_feedback': 50,
                  'negative_feedback': 5,
                  }
-        print ("ART", art)
-        print Bungiesearch.BUNGIE
         obj = Article.objects.create(**art)
         print 'Sleeping two seconds for Elasticsearch to index new item.'
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_four = Article.objects.search.query('match', title='four')
-        print ("LEN", len(find_four))
         self.assertEqual(len(find_four), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_four))
         # Let's check that both returned items are from different indices.
         self.assertNotEqual(find_four[0:1:True].meta.index, find_four[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')

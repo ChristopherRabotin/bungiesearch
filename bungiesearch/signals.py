@@ -9,10 +9,9 @@ from .utils import update_index, delete_index_item
 def get_signal_processor():
     signals = Bungiesearch.BUNGIE['SIGNALS']
     if 'SIGNAL_CLASS' in signals:
-        signal_path   = signals['SIGNAL_CLASS'].split('.')
+        signal_path = signals['SIGNAL_CLASS'].split('.')
         signal_module = import_module('.'.join(signal_path[:-1]))
-        class_name    = signal_path[-1]
-        signal_class  = getattr(signal_module, class_name)
+        signal_class = getattr(signal_module, signal_path[-1])
     else:
         signal_class = BungieSignalProcessor
     return signal_class()
