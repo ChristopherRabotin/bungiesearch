@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Sparrho/bungiesearch.svg?branch=master)](https://travis-ci.org/Sparrho/bungiesearch)
 # Purpose
 Bungiesearch is a Django wrapper for [elasticsearch-dsl-py](https://github.com/elasticsearch/elasticsearch-dsl-py).
 It inherits from elasticsearch-dsl-py's `Search` class, so all the fabulous features developed by the elasticsearch-dsl-py team are also available in Bungiesearch.
@@ -30,6 +31,11 @@ for item in lazy[5:10]:
 	* Search aliases (search shortcuts with as many parameters as wanted): `Tweet.object.bungie_title_search("bungie")` or `Article.object.bungie_title_search("bungie")`, where `bungie_title_search` is uniquely defined.
 * Django signals
 	* Connect to post save and pre delete signals for the elasticsearch index to correctly reflect the database (almost) at all times.
+
+* Requirements
+	* Django >= 1.7
+	* Python 2.7 or 3.4
+	
 
 ## Feature examples
 See section "Full example" at the bottom of page to see the code needed to perform these following examples.

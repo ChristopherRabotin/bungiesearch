@@ -48,7 +48,7 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
         logging.info('Indexing {} documents on index {}.'.format(num_docs, index_name))
         prev_step = 0
         max_docs = num_docs + bulk_size if num_docs > bulk_size else bulk_size + 1
-        for next_step in xrange(bulk_size, max_docs, bulk_size):
+        for next_step in range(bulk_size, max_docs, bulk_size):
             logging.info('Indexing documents {} to {} of {} total on index {}.'.format(prev_step, next_step, num_docs, index_name))
             bulk_index(src.get_es_instance(), [index_instance.serialize_object(doc) for doc in model_items[prev_step:next_step] if index_instance.matches_indexing_condition(doc)], index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step

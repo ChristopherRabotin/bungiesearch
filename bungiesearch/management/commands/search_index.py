@@ -4,6 +4,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from elasticsearch.helpers import bulk_index
+from six import iteritems
 
 from ... import Bungiesearch
 from ...utils import update_index
@@ -119,7 +120,7 @@ class Command(BaseCommand):
                         index_to_doctypes[index] = src.get_models(index)
                     logging.info('Deleting mapping for all models ({}) on all indices ({}).'.format(index_to_doctypes.values(), index_to_doctypes.keys()))
 
-                for index, doctype_list in index_to_doctypes.iteritems():
+                for index, doctype_list in iteritems(index_to_doctypes):
                     es.indices.delete_mapping(index, ','.join(doctype_list), params=None)
 
         elif options['action'] == 'create':
@@ -154,10 +155,10 @@ class Command(BaseCommand):
                     try:
                         es.indices.put_mapping(model_name, src._idx_name_to_mdl_to_mdlidx[index][model_name].get_mapping(), index=index)
                     except Exception as e:
-                        print e
+                        print(e)
                         if raw_input('Something terrible happened! Type "abort" to stop updating the mappings: ') == 'abort':
                             raise e
-                        print 'Continuing.'
+                        print('Continuing.')
 
         else:
             if options['models']:

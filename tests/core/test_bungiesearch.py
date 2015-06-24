@@ -6,6 +6,7 @@ from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
 from django.test import TestCase
 import pytz
+from six import iteritems
 
 from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex, UserIndex
@@ -41,14 +42,14 @@ class CoreTestCase(TestCase):
         Article.objects.create(**art_1)
         User.objects.create(**user_1)
 
-        art_2 = dict((k, v) for k, v in art_1.iteritems())
+        art_2 = dict((k, v) for k, v in iteritems(art_1))
         art_2['link'] += '/page2'
         art_2['title'] = 'Title two'
         art_2['description'] = 'This is a second article.'
         art_2['text_field'] = None
         art_2['published'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
 
-        user_2 = dict((k, v) for k, v in user_1.iteritems())
+        user_2 = dict((k, v) for k, v in iteritems(user_1))
         user_2['user_id'] = 'bungie2'
         user_2['description'] = 'This is the second user'
         user_2['created'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
@@ -58,7 +59,7 @@ class CoreTestCase(TestCase):
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
-        print 'Sleeping two seconds for Elasticsearch to index.'
+        print('Sleeping two seconds for Elasticsearch to index.')
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     @classmethod
@@ -221,7 +222,7 @@ class CoreTestCase(TestCase):
                'positive_feedback': 50,
                'negative_feedback': 5}
         obj = Article.objects.create(**art)
-        print 'Sleeping two seconds for Elasticsearch to index new item.'
+        print('Sleeping two seconds for Elasticsearch to index new item.')
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_three = Article.objects.search.query('match', title='three')
         self.assertEqual(len(find_three), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_three))
@@ -229,7 +230,7 @@ class CoreTestCase(TestCase):
         self.assertNotEqual(find_three[0:1:True].meta.index, find_three[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
-        print 'Sleeping two seconds for Elasticsearch to update its index after deleting an item.'
+        print('Sleeping two seconds for Elasticsearch to update its index after deleting an item.')
         sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     def test_manager_interference(self):
@@ -264,7 +265,7 @@ class CoreTestCase(TestCase):
         Test fun queries.
         '''
         lazy = Article.objects.bsearch_title_search('title').only('pk').fields('_id')
-        print len(lazy) # Returns the total hits computed by elasticsearch.
+        print(len(lazy)) # Returns the total hits computed by elasticsearch.
         assert all([type(item) == Article for item in lazy.filter('range', effective_date={'lte': '2014-09-22'})[5:7]])
 
     def test_meta(self):
@@ -279,7 +280,7 @@ class CoreTestCase(TestCase):
         Tests that the indexing condition controls indexing properly.
         '''
         mbeo = ManangedButEmpty.objects.create(title='Some time', description='This should never be indexed.')
-        print 'Sleeping two seconds for Elasticsearch to (not) index.'
+        print('Sleeping two seconds for Elasticsearch to (not) index.')
         sleep(2)
         idxi = len(ManangedButEmpty.objects.search)
         self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))

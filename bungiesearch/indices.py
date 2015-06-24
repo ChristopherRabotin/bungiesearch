@@ -1,6 +1,7 @@
 import logging
 
 from bungiesearch.fields import AbstractField, django_field_to_index
+from six import iteritems
 
 
 class ModelIndex(object):
@@ -46,7 +47,7 @@ class ModelIndex(object):
         self.fields_to_fetch = list(set(self.fields.keys()).union(additional_fields))
 
         # Adding or updating the fields which are defined at class level.
-        for cls_attr, obj in self.__class__.__dict__.iteritems():
+        for cls_attr, obj in iteritems(self.__class__.__dict__):
             if not isinstance(obj, AbstractField):
                 continue
 
@@ -67,7 +68,7 @@ class ModelIndex(object):
         '''
         :return: a dictionary which can be used to generate the elasticsearch index mapping for this doctype.
         '''
-        return {'properties': dict((name, field.json()) for name, field in self.fields.iteritems())}
+        return {'properties': dict((name, field.json()) for name, field in iteritems(self.fields))}
 
     def serialize_object(self, obj, obj_pk=None):
         '''
@@ -84,7 +85,7 @@ class ModelIndex(object):
             except Exception as e:
                 raise ValueError('Could not find object of primary key = {} in model {} (model index class {}). (Original exception: {}.)'.format(obj_pk, self.model, self.__class__.__name__, e))
 
-        return dict((name, field.value(obj)) for name, field in self.fields.iteritems())
+        return dict((name, field.value(obj)) for name, field in iteritems(self.fields))
 
     def _get_fields(self, fields, excludes, hotfixes):
         '''
