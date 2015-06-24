@@ -1,10 +1,12 @@
 import logging
 
-from . import Bungiesearch
-from elasticsearch.helpers import bulk_index
 from dateutil.parser import parse as parsedt
 from django.utils import timezone
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch.helpers import bulk_index
+
+from . import Bungiesearch
+
 
 def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None):
     '''
@@ -24,7 +26,7 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
     for index_name in src.get_index(model_name):
         index_instance = src.get_model_index(model_name)
         model = index_instance.get_model()
-    
+
         if num_docs == -1:
             if isinstance(model_items, (list, tuple)):
                 num_docs = len(model_items)
@@ -33,16 +35,16 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
                 if start_date or end_date:
                     if index_instance.updated_field is None:
                         raise ValueError('Cannot filter by date on model {}: no updated_field defined in {}\'s Meta class.'.format(model_name, index_instance.__class__.__name__))
-                    if start_date: 
+                    if start_date:
                         model_items = model_items.filter(**{'{}__gte'.format(index_instance.updated_field): __str_to_tzdate__(start_date)})
                     if end_date:
                         model_items = model_items.filter(**{'{}__lte'.format(index_instance.updated_field): __str_to_tzdate__(end_date)})
-                
+
                 logging.info('Fetching number of documents to be added to {}.'.format(model.__name__))
                 num_docs = model_items.count()
         else:
             logging.warning('Limiting the number of model_items to be indexed to {}.'.format(num_docs))
-    
+
         logging.info('Indexing {} documents on index {}.'.format(num_docs, index_name))
         prev_step = 0
         max_docs = num_docs + bulk_size if num_docs > bulk_size else bulk_size + 1

@@ -1,5 +1,6 @@
-from django.db import models
 from bungiesearch.managers import BungiesearchManager
+from django.db import models
+
 
 class Article(models.Model):
     title = models.TextField(db_index=True)
