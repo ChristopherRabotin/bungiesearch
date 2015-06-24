@@ -34,7 +34,7 @@ for item in lazy[5:10]:
 
 * Requirements
 	* Django >= 1.7
-	* Python 2.7 or 3.4
+	* Python 2.7 (**no Python 3 support yet**)
 	
 
 ## Feature examples
