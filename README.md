@@ -99,6 +99,105 @@ for item in lazy.filter('range', effective_date={'lte': '2014-09-22'}):
     print item
 
 ```
+# Quick start example
+This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
+
+## Procedure
+1. In your models.py file (or your managers.py), import bungiesearch and use it as a model manager.
+2. Define one or more ModelIndex subclasses which define the mapping between your Django model and elasticsearch.
+3. (Optional) Define SearchAlias subclasses which make it trivial to call complex elasticsearch-dsl-py functions.
+4. Add a BUNGIESEARCH variable in your Django settings, which must contain the elasticsearch URL(s), the modules for the indices, the modules for the search aliases and the signal definitions.
+
+## Example
+
+Here's the code which is applicable to the previous examples.
+### Django Model
+
+```python
+from django.db import models
+from bungiesearch.managers import BungiesearchManager
+
+class Article(models.Model):
+    title = models.TextField(db_index=True)
+    authors = models.TextField(blank=True)
+    description = models.TextField(blank=True)
+    link = models.URLField(max_length=510, unique=True, db_index=True)
+    published = models.DateTimeField(null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(null=True)
+    tweet_count = models.IntegerField()
+    raw = models.BinaryField(null=True)
+    source_hash = models.BigIntegerField(null=True)
+    missing_data = models.CharField(blank=True, max_length=255)
+    positive_feedback = models.PositiveIntegerField(null=True, blank=True, default=0)
+    negative_feedback = models.PositiveIntegerField(null=True, blank=True, default=0)
+    popularity_index = models.IntegerField(default=0)
+
+    objects = BungiesearchManager()
+
+    class Meta:
+        app_label = 'core'
+```
+
+### ModelIndex
+
+The following ModelIndex will generate a mapping containing all fields from `Article`, minus those defined in `ArticleIndex.Meta.exclude`. When the mapping is generated, each field will the most appropriate [elasticsearch core type](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-core-types.html), with default attributes (as defined in bungiesearch.fields).
+
+These default attributes can be overwritten with `ArticleIndex.Meta.hotfixes`: each dictionary key must be field defined either in the model or in the ModelIndex subclass (`ArticleIndex` in this case).
+
+```python
+from core.models import Article
+from bungiesearch.fields import DateField, StringField
+from bungiesearch.indices import ModelIndex
+
+
+class ArticleIndex(ModelIndex):
+    effectived_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
+    meta_data = StringField(eval_as='" ".join([fld for fld in [obj.link, str(obj.tweet_count), obj.raw] if fld])')
+
+    class Meta:
+        model = Article
+        exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
+        hotfixes = {'updated': {'null_value': '2013-07-01'},
+                    'title': {'boost': 1.75},
+                    'description': {'boost': 1.35},
+                    'full_text': {'boost': 1.125}}
+
+```
+
+### SearchAlias
+Defines a search alias for one or more models (in this case only for `core.models.Article`).
+```python
+from core.models import Article
+from bungiesearch.aliases import SearchAlias
+
+
+class SearchTitle(SearchAlias):
+    def alias_for(self, title):
+        return self.search_instance.query('match', title=title)
+
+    class Meta:
+        models = (Article,)
+        alias_name = 'title_search' # This is optional. If none is provided, the name will be the class name in lower case.
+
+class InvalidAlias(SearchAlias):
+    def alias_for_does_not_exist(self, title):
+        return title
+
+    class Meta:
+        models = (Article,)
+```
+
+### Django settings
+```python
+BUNGIESEARCH = {
+                'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
+                'INDICES': {'bungiesearch_demo': 'core.search_indices'},
+                'ALIASES': {'bsearch': 'myproject.search_aliases'},
+                'SIGNALS': {'BUFFER_SIZE': 1}  # uses BungieSignalProcessor
+                }
+```
+
 # Documentation
 
 ## ModelIndex
@@ -309,100 +408,6 @@ Hence, a possibly better implementation is wrapping `post_save_connector` and `p
 
 ### TIMEOUT
 *Optional:* Elasticsearch connection timeout in seconds. Defaults to `5`.
-
-# Backend code example
-This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
-
-Here's the code which is applicable to the previous examples.
-### Django Model
-
-```python
-from django.db import models
-from bungiesearch.managers import BungiesearchManager
-
-class Article(models.Model):
-    title = models.TextField(db_index=True)
-    authors = models.TextField(blank=True)
-    description = models.TextField(blank=True)
-    link = models.URLField(max_length=510, unique=True, db_index=True)
-    published = models.DateTimeField(null=True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(null=True)
-    tweet_count = models.IntegerField()
-    raw = models.BinaryField(null=True)
-    source_hash = models.BigIntegerField(null=True)
-    missing_data = models.CharField(blank=True, max_length=255)
-    positive_feedback = models.PositiveIntegerField(null=True, blank=True, default=0)
-    negative_feedback = models.PositiveIntegerField(null=True, blank=True, default=0)
-    popularity_index = models.IntegerField(default=0)
-
-    objects = BungiesearchManager()
-
-    class Meta:
-        app_label = 'core'
-```
-
-### ModelIndex
-
-The following ModelIndex will generate a mapping containing all fields from `Article`, minus those defined in `ArticleIndex.Meta.exclude`. When the mapping is generated, each field will the most appropriate [elasticsearch core type](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/mapping-core-types.html), with default attributes (as defined in bungiesearch.fields).
-
-These default attributes can be overwritten with `ArticleIndex.Meta.hotfixes`: each dictionary key must be field defined either in the model or in the ModelIndex subclass (`ArticleIndex` in this case).
-
-```python
-from core.models import Article
-from bungiesearch.fields import DateField, StringField
-from bungiesearch.indices import ModelIndex
-
-
-class ArticleIndex(ModelIndex):
-    effectived_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
-    meta_data = StringField(eval_as='" ".join([fld for fld in [obj.link, str(obj.tweet_count), obj.raw] if fld])')
-
-    class Meta:
-        model = Article
-        exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
-        hotfixes = {'updated': {'null_value': '2013-07-01'},
-                    'title': {'boost': 1.75},
-                    'description': {'boost': 1.35},
-                    'full_text': {'boost': 1.125}}
-
-```
-
-### SearchAlias
-Defines a search alias for one or more models (in this case only for `core.models.Article`).
-```python
-from core.models import Article
-from bungiesearch.aliases import SearchAlias
-
-
-class SearchTitle(SearchAlias):
-    def alias_for(self, title):
-        return self.search_instance.query('match', title=title)
-
-    class Meta:
-        models = (Article,)
-        alias_name = 'title_search' # This is optional. If none is provided, the name will be the class name in lower case.
-
-class InvalidAlias(SearchAlias):
-    def alias_for_does_not_exist(self, title):
-        return title
-
-    class Meta:
-        models = (Article,)
-```
-
-### Django settings
-```python
-BUNGIESEARCH = {
-                'URLS': [os.getenv('ELASTIC_SEARCH_URL')],
-                'INDICES': {'bungiesearch_demo': 'core.search_indices'},
-                'ALIASES': {'bsearch': 'myproject.search_aliases'},
-                'SIGNALS': {'BUFFER_SIZE': 1}  # uses BungieSignalProcessor
-                }
-```
-
-# Build Status
-![Travis image](https://travis-ci.org/Sparrho/bungiesearch.svg)
 
 # Testing
 All Bungiesearch tests are in `tests/core/test_bungiesearch.py`.
