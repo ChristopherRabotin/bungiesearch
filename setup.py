@@ -3,7 +3,7 @@ import sys
 from os.path import join, dirname
 from setuptools import setup, find_packages
 
-VERSION = (1, 0, 2)
+VERSION = (1, 1, 0)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -16,6 +16,7 @@ install_requires = [
     'django>=1.6',
     'elasticsearch-dsl>=0.0.4',
     'python-dateutil',
+    'six',
 ]
 
 tests_require = []
@@ -43,7 +44,6 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 3",
         "Framework :: Django"
     ],
     keywords="elasticsearch haystack django bungiesearch sparrho",

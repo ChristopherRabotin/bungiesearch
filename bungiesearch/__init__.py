@@ -8,7 +8,7 @@ from bungiesearch.indices import ModelIndex
 import bungiesearch.managers
 from django.conf import settings
 from elasticsearch.client import Elasticsearch
-from six import string_types
+from six import string_types, iteritems, itervalues
 
 
 class Bungiesearch(Search):
@@ -37,9 +37,9 @@ class Bungiesearch(Search):
         cls.__loaded_indices__ = True
 
         # Loading indices.
-        for index_name, module_str in cls.BUNGIE['INDICES'].iteritems():
+        for index_name, module_str in iteritems(cls.BUNGIE['INDICES']):
             index_module = import_module(module_str)
-            for index_obj in index_module.__dict__.itervalues():
+            for index_obj in itervalues(index_module.__dict__):
                 try:
                     if issubclass(index_obj, ModelIndex) and index_obj != ModelIndex:
                         index_instance = index_obj()
@@ -55,19 +55,19 @@ class Bungiesearch(Search):
                     pass # Oops, just attempted to get subclasses of a non-class.
 
         # Create reverse maps in order to have O(1) access.
-        for index_name, models in cls._index_to_model.iteritems():
+        for index_name, models in iteritems(cls._index_to_model):
             for model in models:
                 cls._model_to_index[model].append(index_name)
                 cls._model_name_to_index[model.__name__].append(index_name)
 
         # Loading aliases.
-        for alias_prefix, module_str in cls.BUNGIE.get('ALIASES', {}).iteritems():
+        for alias_prefix, module_str in iteritems(cls.BUNGIE.get('ALIASES', {})):
             if alias_prefix is None:
                 alias_prefix = 'bungie'
             if alias_prefix != '':
                 alias_prefix += '_'
             alias_module = import_module(module_str)
-            for alias_obj in alias_module.__dict__.itervalues():
+            for alias_obj in itervalues(alias_module.__dict__):
                 try:
                     if issubclass(alias_obj, SearchAlias) and alias_obj != SearchAlias:
                         alias_instance = alias_obj()
@@ -178,7 +178,7 @@ class Bungiesearch(Search):
                 found_results['{1.meta.index}.{0}.{1.meta.id}'.format(model_name, result)] = (pos, result.meta)
 
         # Now that we have model ids per model name, let's fetch everything at once.
-        for ref_name, ids in model_results.iteritems():
+        for ref_name, ids in iteritems(model_results):
             index_name, model_name = ref_name.split('.')
             model_idx = Bungiesearch._idx_name_to_mdl_to_mdlidx[index_name][model_name]
             model_obj = model_idx.get_model()
@@ -224,7 +224,7 @@ class Bungiesearch(Search):
 
         search_keys = ['using', 'index', 'doc_type', 'extra']
         search_settings, es_settings = {}, {}
-        for k, v in kwargs.iteritems():
+        for k, v in iteritems(kwargs):
             if k in search_keys:
                 search_settings[k] = v
             else:
