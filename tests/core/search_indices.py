@@ -3,6 +3,8 @@ from bungiesearch.indices import ModelIndex
 
 from core.models import Article, User, NoUpdatedField
 
+from .analysis import edge_ngram_analyzer
+
 
 class ArticleIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.published > obj.created else obj.published')
@@ -21,6 +23,7 @@ class ArticleIndex(ModelIndex):
 
 class UserIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.updated > obj.created else obj.updated')
+    description = StringField(model_attr='description', analyzer=edge_ngram_analyzer)
 
     class Meta:
         model = User
