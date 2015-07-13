@@ -225,6 +225,46 @@ class CoreTestCase(TestCase):
         self.assertNotEqual(find_three[0:1:True].meta.index, find_three[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
+    
+    def test_bulk_delete(self):
+        '''
+        This tests that using the update_index function with 'delete' as the action performs a bulk delete operation on the data.
+        '''
+        bulk_art1 = {'title': 'Title four',
+                     'description': 'Bulk delete first',
+                     'link': 'http://example.com/bd1',
+                     'published': pytz.UTC.localize(datetime(year=2015, month=7, day=13)),
+                     'updated': pytz.UTC.localize(datetime(year=2015, month=7, day=20)),
+                     'tweet_count': 20,
+                     'source_hash': 159159159159,
+                     'missing_data': '',
+                     'positive_feedback': 50,
+                     'negative_feedback': 5}
+        bulk_art2 = {'title': 'Title five',
+                     'description': 'Bulk delete second',
+                     'link': 'http://example.com/bd2',
+                     'published': pytz.UTC.localize(datetime(year=2015, month=7, day=13)),
+                     'updated': pytz.UTC.localize(datetime(year=2015, month=7, day=20)),
+                     'tweet_count': 20,
+                     'source_hash': 159159159159,
+                     'missing_data': '',
+                     'positive_feedback': 50,
+                     'negative_feedback': 5}
+
+        bulk_obj1 = Article.objects.create(**bulk_art1)
+        bulk_obj2 = Article.objects.create(**bulk_art2)
+
+        find_five = Article.objects.search.query('match', title='five')
+        self.assertEqual(len(find_five), 2, 'Searching for "five" in title did not return exactly one result (got {})'.format(find_five))
+        
+        model_items = [bulk_obj1, bulk_obj2]
+        model_name = Article.__name__
+        update_index(model_items, model_name, action='delete', bulk_size=2, num_docs=-1, start_date=None, end_date=None, commit=True)
+        
+        find_four = Article.objects.search.query('match', title='four')
+        self.assertEqual(len(find_four), 0, 'Searching for "four" in title did not return exactly zero results (got {})'.format(find_four))        
+        find_five = Article.objects.search.query('match', title='five')
+        self.assertEqual(len(find_five), 0, 'Searching for "five" in title did not return exactly zero results (got {})'.format(find_five))        
 
     def test_manager_interference(self):
         '''

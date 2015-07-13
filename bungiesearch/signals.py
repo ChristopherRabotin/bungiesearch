@@ -34,7 +34,7 @@ class BungieSignalProcessor(object):
         __items_to_be_indexed__[sender].append(instance)
 
         if len(__items_to_be_indexed__[sender]) >= buffer_size:
-            update_index(__items_to_be_indexed__[sender], sender.__name__, buffer_size)
+            update_index(__items_to_be_indexed__[sender], sender.__name__, bulk_size=buffer_size)
             # Let's now empty this buffer or we'll end up reindexing every item which was previously buffered.
             __items_to_be_indexed__[sender] = []
 
