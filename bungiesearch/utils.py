@@ -8,7 +8,7 @@ from elasticsearch.helpers import bulk_index
 from . import Bungiesearch
 
 
-def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None):
+def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date=None, end_date=None, commit=True):
     '''
     Updates the index for the provided model_items.
     :param model_items: a list of model_items (django Model instances, or proxy instances) which are to be indexed, or updated.
@@ -52,8 +52,12 @@ def update_index(model_items, model_name, bulk_size=100, num_docs=-1, start_date
             logging.info('Indexing documents {} to {} of {} total on index {}.'.format(prev_step, next_step, num_docs, index_name))
             bulk_index(src.get_es_instance(), [index_instance.serialize_object(doc) for doc in model_items[prev_step:next_step] if index_instance.matches_indexing_condition(doc)], index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
+        
+        if commit:
+            src.get_es_instance().indices.refresh(index=index_name)
 
-def delete_index_item(item, model_name):
+
+def delete_index_item(item, model_name, commit=True):
     '''
     Deletes an item from the index.
     :param item: must be a serializable object.
@@ -69,6 +73,9 @@ def delete_index_item(item, model_name):
             src.get_es_instance().delete(index_name, model_name, item_es_id)
         except NotFoundError as e:
             logging.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
+        
+        if commit:
+            src.get_es_instance().indices.refresh(index=index_name)
 
 def __str_to_tzdate__(date_str):
     return timezone.make_aware(parsedt(date_str), timezone.get_current_timezone())

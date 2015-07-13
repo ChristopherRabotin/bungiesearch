@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import sleep
 
 from bungiesearch import Bungiesearch
 from bungiesearch.management.commands import search_index
@@ -59,8 +58,6 @@ class CoreTestCase(TestCase):
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
         search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
-        print('Sleeping two seconds for Elasticsearch to index.')
-        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     @classmethod
     def tearDownClass(cls):
@@ -222,16 +219,12 @@ class CoreTestCase(TestCase):
                'positive_feedback': 50,
                'negative_feedback': 5}
         obj = Article.objects.create(**art)
-        print('Sleeping two seconds for Elasticsearch to index new item.')
-        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
         find_three = Article.objects.search.query('match', title='three')
         self.assertEqual(len(find_three), 2, 'Searching for "three" in title did not return exactly two items (got {}).'.format(find_three))
         # Let's check that both returned items are from different indices.
         self.assertNotEqual(find_three[0:1:True].meta.index, find_three[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
-        print('Sleeping two seconds for Elasticsearch to update its index after deleting an item.')
-        sleep(2) # Without this we query elasticsearch before it has analyzed the newly committed changes, so it doesn't return any result.
 
     def test_manager_interference(self):
         '''
@@ -292,8 +285,6 @@ class CoreTestCase(TestCase):
         Tests that the indexing condition controls indexing properly.
         '''
         mbeo = ManangedButEmpty.objects.create(title='Some time', description='This should never be indexed.')
-        print('Sleeping two seconds for Elasticsearch to (not) index.')
-        sleep(2)
         idxi = len(ManangedButEmpty.objects.search)
         self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))
         mbeo.delete()
