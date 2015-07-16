@@ -255,11 +255,11 @@ class CoreTestCase(TestCase):
         bulk_obj2 = Article.objects.create(**bulk_art2)
 
         find_five = Article.objects.search.query('match', title='five')
-        self.assertEqual(len(find_five), 2, 'Searching for "five" in title did not return exactly one result (got {})'.format(find_five))
+        self.assertEqual(len(find_five), 2, 'Searching for "five" in title did not return exactly two results (got {})'.format(find_five))
         
         model_items = [bulk_obj1, bulk_obj2]
         model_name = Article.__name__
-        update_index(model_items, model_name, action='delete', bulk_size=2, num_docs=-1, start_date=None, end_date=None, commit=True)
+        update_index(model_items, model_name, action='delete', bulk_size=2, num_docs=-1, start_date=None, end_date=None, refresh=True)
         
         find_four = Article.objects.search.query('match', title='four')
         self.assertEqual(len(find_four), 0, 'Searching for "four" in title did not return exactly zero results (got {})'.format(find_four))        

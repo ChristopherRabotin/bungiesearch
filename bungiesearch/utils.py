@@ -8,16 +8,18 @@ from elasticsearch.helpers import bulk_index
 from . import Bungiesearch
 
 
-def update_index(model_items, model_name, action='index', bulk_size=100, num_docs=-1, start_date=None, end_date=None, commit=True):
+def update_index(model_items, model_name, action='index', bulk_size=100, num_docs=-1, start_date=None, end_date=None, refresh=True):
     '''
     Updates the index for the provided model_items.
     :param model_items: a list of model_items (django Model instances, or proxy instances) which are to be indexed, or updated.
     :param model_name: doctype, which must also be the model name.
-    :param action: the action that you'd like to perform on this group of data. Must be in ('index', 'delete') and defaults to 'index'
+    :param action: the action that you'd like to perform on this group of data. Must be in ('index', 'delete') and defaults to 'index.'
     :param bulk_size: bulk size for indexing. Defaults to 100.
     :param num_docs: maximum number of model_items from the provided list to be indexed.
     :param start_date: start date for indexing. Must be as YYYY-MM-DD.
     :param end_date: end date for indexing. Must be as YYYY-MM-DD.
+    :param refresh: a boolean that determines whether to refresh the index, making all operations performed since the last refresh
+    immediately available for search, instead of needing to wait for the scheduled Elasticsearch execution. Defaults to True.
     :note: If model_items contain multiple models, then num_docs is applied to *each* model. For example, if bulk_size is set to 5,
     and item contains models Article and Article2, then 5 model_items of Article *and* 5 model_items of Article2 will be indexed.
     '''
@@ -40,8 +42,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
                         model_items = model_items.filter(**{'{}__gte'.format(index_instance.updated_field): __str_to_tzdate__(start_date)})
                     if end_date:
                         model_items = model_items.filter(**{'{}__lte'.format(index_instance.updated_field): __str_to_tzdate__(end_date)})
-
-                logging.info('Fetching number of documents to update in {}.'.format(model.__name__))
+                logging.info('Fetching number of documents to {} in {}.'.format(action, model.__name__))
                 num_docs = model_items.count()
         else:
             logging.warning('Limiting the number of model_items to {} to {}.'.format(action, num_docs))
@@ -50,7 +51,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
         prev_step = 0
         max_docs = num_docs + bulk_size if num_docs > bulk_size else bulk_size + 1
         for next_step in range(bulk_size, max_docs, bulk_size):
-            logging.info('{} documents {} to {} of {} total on index {}.'.format(action, prev_step, next_step, num_docs, index_name))
+            logging.info('{}: documents {} to {} of {} total on index {}.'.format(action.capitalize(), prev_step, next_step, num_docs, index_name))
             data = [index_instance.serialize_object(doc) for doc in model_items[prev_step:next_step] if index_instance.matches_indexing_condition(doc)] 
             for entry in data:
                 # Tell elasticsearch-py what to do with the data internally
@@ -58,14 +59,16 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
             bulk_index(src.get_es_instance(), data, index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
 
-        if commit:
+        if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
 
-def delete_index_item(item, model_name, commit=True):
+def delete_index_item(item, model_name, refresh=True):
     '''
     Deletes an item from the index.
     :param item: must be a serializable object.
     :param model_name: doctype, which must also be the model name.
+    :param refresh: a boolean that determines whether to refresh the index, making all operations performed since the last refresh
+    immediately available for search, instead of needing to wait for the scheduled Elasticsearch execution. Defaults to True.
     '''
     src = Bungiesearch()
 
@@ -78,7 +81,7 @@ def delete_index_item(item, model_name, commit=True):
         except NotFoundError as e:
             logging.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
         
-        if commit:
+        if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
 
 def __str_to_tzdate__(date_str):
