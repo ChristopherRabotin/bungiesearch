@@ -109,9 +109,6 @@ The easiest way is to install the package from PyPi:
 
 **Note:** Check your version of Django after installing bungiesearch. It was reported to me directly that installing bungiesearch may upgrade your version of Django, although I haven't been able to confirm that myself. Bungiesearch depends on Django 1.7 and above.
 
-# Quick start example
-This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
-
 ## In Django
 
 ### Updating your Django models
@@ -160,6 +157,9 @@ Run the following which will take each of the objects in your model, serialize t
 
 ## In Elasticsearch
 You can now open your elasticsearch dashboard, such as Elastic HQ, and see that your index is created with the appropriate mapping and has items that are indexed.
+
+# Quick start example
+This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
 
 ## Procedure
 1. In your models.py file (or your managers.py), import bungiesearch and use it as a model manager.
