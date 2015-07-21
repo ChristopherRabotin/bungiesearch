@@ -99,6 +99,65 @@ for item in lazy.filter('range', effective_date={'lte': '2014-09-22'}):
     print item
 
 ```
+# Installation
+Unless noted otherwise, each step is required.
+
+## Install the package
+The easiest way is to install the package from PyPi:
+
+`pip install bungiesearch`
+
+**Note:** Check your version of Django after installing bungiesearch. It was reported to me directly that installing bungiesearch may upgrade your version of Django, although I haven't been able to confirm that myself. Bungiesearch depends on Django 1.7 and above.
+
+## In Django
+
+### Updating your Django models
+
+**Note:** this part is only needed if you want to be able to use search aliases, which allow you to define shortcuts to complex queries, available directly from your Django models. I think it's extremely practical.
+
+1. Open your `models.py` file.
+2. Add the bungiesearch manager import: `from bungiesearch.managers import BungiesearchManager`
+3. Find the model, or models, you wish to index on Elasticsearch and set them to be managed by Bungiesearch by adding the objects field to them, as such: `objects = BungiesearchManager()`.
+You should now have a Django model [similar to this](https://github.com/Sparrho/bungiesearch#django-model).
+
+### Creating bungiesearch search indexes
+The search indexes define how bungiesearch should serialize each of the model's objects. It effectively defines how your object is serialized and how the ES index should be structured. These are referred to as [ModelIndex](https://github.com/Sparrho/bungiesearch#modelindex-1)es.
+
+A good practice here is to have all the bungiesearch stuff in its own package. For example, for the section of the Sparrho platform that uses Django, we have a package called `search` where we define the search indexes, and a subpackage called `aliases` which has the many aliases we use (more on that latter).
+
+1. Create a subclass of `ModelIndex`, which you can import from from `bungiesearch.indices import ModelIndex`, in a new module preferably.
+2. In this class, define a class called `Meta`: it will hold meta information of this search index for bungiesearch's internal working.
+3. Import the Django model you want to index (from your models file) and, in the Meta class, define a field called `model`, which must be set to the model you want indexed.
+4. By default, bungiesearch will index every field of your model. This may not always be desired, so you can define which fields must be excluded in this `Meta` class, via the exclude field.
+5. There are plenty of options, so definitely have a read through the documentation for [ModelIndex](https://github.com/Sparrho/bungiesearch#modelindex-1).
+
+Here's [an example](https://github.com/Sparrho/bungiesearch#modelindex) of a search index. There can be many such definitions in a file.
+
+### Django settings
+This is the final required step. Here's the [full documentation](https://github.com/Sparrho/bungiesearch#settings) of this step.
+
+1. Open your settings file and add a `BUNGIESEARCH` variable, which must be a dictionary.
+2. Define `URLS` as a list of URLs (which can contain only one) of your ES servers.
+3. Define the `INDICES` key as a dictionary where the key is the name of the index on ES that you want, and the value is the full Python path to the module which has all the ModelIndex classes for to be indexed on that index name.
+4. Set `ALIASES` to an empty dictionary (until you define any search aliases).
+5. You can keep other values as their defaults.
+
+## In your shell
+### Create the ES indexes
+From your shell, in the Django environment, run the following:
+
+`python manage.py search_index --create`
+
+## Start populating the index
+Run the following which will take each of the objects in your model, serialize them, and add them to the elasticsearch index.
+
+`python manage.py search_index --update`
+
+**Note:** With additional parameters, you can limit the number of documents to be indexed, as well as set conditions on whether they should be indexed based on updated time for example.
+
+## In Elasticsearch
+You can now open your elasticsearch dashboard, such as Elastic HQ, and see that your index is created with the appropriate mapping and has items that are indexed.
+
 # Quick start example
 This example is from the `test` folder. It may be partially out-dated, so please refer to the `test` folder for the latest version.
 
