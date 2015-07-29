@@ -87,12 +87,12 @@ class ModelIndex(object):
                 if not isinstance(analyzer, Analyzer):
                     continue
 
-                d = analyzer.get_analysis_definition()
-                if not d:
+                definition = analyzer.get_analysis_definition()
+                if definition is None:
                     continue
 
-                for key in d:
-                    analysis.setdefault(key, {}).update(d[key])
+                for key in definition:
+                    analysis.setdefault(key, {}).update(definition[key])
 
         return analysis
 
