@@ -1,3 +1,4 @@
+from django.template import Context, loader
 from django.template.defaultfilters import striptags
 from six import iteritems
 

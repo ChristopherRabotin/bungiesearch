@@ -69,6 +69,7 @@ class CoreTestCase(TestCase):
         '''
         expected_article = {'properties': {'updated': {'type': 'date', 'null_value': '2013-07-01'},
                                            'description': {'type': 'string', 'boost': 1.35, 'analyzer': 'snowball'},
+                                           'text': {'type': 'string', 'analyzer': 'edge_ngram_analyzer'},
                                            'text_field': {'type': 'string', 'analyzer': 'snowball'},
                                            'created': {'type': 'date'},
                                            'title': {'type': 'string', 'boost': 1.75, 'analyzer': 'snowball'},
@@ -292,6 +293,20 @@ class CoreTestCase(TestCase):
         for item in items:
             model = item._meta.proxy_for_model if item._meta.proxy_for_model else type(item)
             self.assertIn(model, [Article, NoUpdatedField], 'Got an unmapped item ({}), or an item with an unexpected mapping.'.format(type(item)))
+
+    def test_data_templates(self):
+        # One article has a title that contains 'one'
+        match_one = Article.objects.search.query('match', text='one')
+        self.assertEqual(len(match_one), 2, 'Searching for "one" in text did not return exactly one item (got {}).'.format(match_one))
+        self.assertEqual(match_one[0].title, 'Title one', 'Searching for "one" in text did not yield the first article (got {})'.format(match_one[0].title))
+        
+        # Two articles have a description that contain 'article'
+        match_two = Article.objects.search.query('match', text='article')
+        self.assertEqual(len(match_two), 4, 'Searching for "article" in text did not return exactly two items (got {})'.format(match_two))
+
+        # Two articles have a link with 'example,' but since link isn't in the template, there should be zero results
+        match_zero = Article.objects.search.query('match', text='example')
+        self.assertEqual(len(match_zero), 0, 'Searching for "article" in text did not return exactly zero items (got {})'.format(match_zero))
 
     def test_fields(self):
         '''
