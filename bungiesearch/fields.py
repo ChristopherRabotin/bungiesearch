@@ -51,9 +51,10 @@ class AbstractField(object):
 
         self.model_attr = args.pop('model_attr', None)
         self.eval_func = args.pop('eval_as', None)
+        self.template_name = args.pop('template', None)
 
-        if not self.model_attr and not self.eval_func:
-            raise KeyError('{} gets its value via a model attribute or an eval function, but neither of `model_attr`, `eval_as` is provided. Args were {}.'.format(unicode(self), args))
+        if not self.model_attr and not self.eval_func and not self.template_name:
+            raise KeyError('{} gets its value via a model attribute, an eval function, or a template, but neither of `model_attr`, `eval_as,` `template` is provided. Args were {}.'.format(unicode(self), args))
 
         for attr, value in iteritems(args):
             if attr not in self.fields and attr not in AbstractField.common_fields:
@@ -69,6 +70,10 @@ class AbstractField(object):
         Computes the value of this field to update the index.
         :param obj: object instance, as a dictionary or as a model instance.
         '''
+        if self.template_name:
+            t = loader.select_template([self.template_name])
+            return t.render(Context({'object': obj}))
+
         if self.eval_func:
             try:
                 return eval(self.eval_func)
@@ -90,8 +95,8 @@ class AbstractField(object):
                 json[attr] = val
 
         return json
-# All the following definitions could probably be done with better polymorphism.
 
+# All the following definitions could probably be done with better polymorphism.
 class StringField(AbstractField):
     coretype = 'string'
     fields = ['doc_values', 'term_vector', 'norms', 'index_options', 'analyzer', 'index_analyzer', 'search_analyzer', 'include_in_all', 'ignore_above', 'position_offset_gap', 'fielddata', 'similarity']
