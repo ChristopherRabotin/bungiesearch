@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Sparrho/bungiesearch.svg?branch=master)](https://travis-ci.org/Sparrho/bungiesearch)
+[![Build Status](https://travis-ci.org/Sparrho/bungiesearch.svg?branch=master)](https://travis-ci.org/Sparrho/bungiesearch) [![Coverage Status](https://coveralls.io/repos/Sparrho/bungiesearch/badge.svg?branch=master&service=github)](https://coveralls.io/github/Sparrho/bungiesearch?branch=master)
 # Purpose
 Bungiesearch is a Django wrapper for [elasticsearch-dsl-py](https://github.com/elasticsearch/elasticsearch-dsl-py).
 It inherits from elasticsearch-dsl-py's `Search` class, so all the fabulous features developed by the elasticsearch-dsl-py team are also available in Bungiesearch.
