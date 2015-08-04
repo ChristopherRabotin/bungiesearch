@@ -82,7 +82,7 @@ class CoreTestCase(TestCase):
                                            'published': {'type': 'date'}}
                            }
         expected_user = {'properties': {'updated': {'type': 'date'},
-                                        'description': {'type': 'string', 'analyzer': 'snowball'},
+                                        'description': {'type': 'string', 'analyzer': 'edge_ngram_analyzer'},
                                         'user_id': {'analyzer': 'snowball', 'type': 'string'},
                                         'effective_date': {'type': 'date'},
                                         'created': {'type': 'date'},
