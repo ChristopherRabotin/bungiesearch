@@ -258,7 +258,7 @@ class CoreTestCase(TestCase):
         find_five = Article.objects.search.query('match', title='five')
         self.assertEqual(len(find_five), 2, 'Searching for "five" in title did not return exactly two results (got {})'.format(find_five))
         
-        model_items = [bulk_obj1, bulk_obj2]
+        model_items = [bulk_obj1.pk, bulk_obj2.pk]
         model_name = Article.__name__
         update_index(model_items, model_name, action='delete', bulk_size=2, num_docs=-1, start_date=None, end_date=None, refresh=True)
         
@@ -279,7 +279,10 @@ class CoreTestCase(TestCase):
         except Exception as e:
             self.fail('update_index with a start date failed for model Article: {}.'.format(e))
 
-        self.assertRaises(ValueError, update_index, **{'model_items': NoUpdatedField.objects.all(), 'model_name': 'NoUpdatedField', 'end_date': datetime.strftime(datetime.now(), '%Y-%m-%d')})
+        try:
+            update_index(NoUpdatedField.objects.all(), 'NoUpdatedField', end_date=datetime.strftime(datetime.now(), '%Y-%m-%d'))
+        except Exception as e:
+            self.fail('update_index with a start date failed for model NoUpdatedField, which has no updated field: {}.'.format(e))
 
     def test_optimal_queries(self):
         db_item = NoUpdatedField.objects.get(pk=1)
