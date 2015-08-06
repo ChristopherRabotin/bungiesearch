@@ -40,6 +40,7 @@ class ModelIndex(object):
         self.updated_field = getattr(_meta, 'updated_field', None)
         self.optimize_queries = getattr(_meta, 'optimize_queries', False)
         self.is_default = getattr(_meta, 'default', True)
+        self.indexing_query = getattr(_meta, 'indexing_query', None)
 
         # Add in fields from the model.
         self.fields.update(self._get_fields(fields, excludes, hotfixes))
