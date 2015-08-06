@@ -3,6 +3,7 @@ from datetime import datetime
 from bungiesearch import Bungiesearch
 from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
+from django.core.management import call_command
 from django.test import TestCase
 import pytz
 from six import iteritems
@@ -17,7 +18,7 @@ class CoreTestCase(TestCase):
         # Let's start by creating the index and mapping.
         # If we create an object before the index, the index
         # will be created automatically, and we want to test the command.
-        search_index.Command().run_from_argv(['tests', 'empty_arg', '--create'])
+        call_command('search_index', action='create')
 
         art_1 = {'title': 'Title one',
                  'description': 'Description of article 1.',
@@ -57,7 +58,7 @@ class CoreTestCase(TestCase):
         User.objects.create(**user_2)
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
-        search_index.Command().run_from_argv(['tests', 'empty_arg', '--update'])
+        call_command('rebuild_index', interactive=False)
 
     @classmethod
     def tearDownClass(cls):
