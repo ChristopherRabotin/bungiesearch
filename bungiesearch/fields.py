@@ -89,8 +89,8 @@ class AbstractField(object):
                 return current_obj
 
         else:
-            raise KeyError('{} gets its value via a model attribute, an eval function, a template, or is prepared in a method'
-                           'call but none of `model_attr`, `eval_as,` `template,` `prepare_{}` is provided.'.format(unicode(field), name))
+            raise KeyError('{0} gets its value via a model attribute, an eval function, a template, or is prepared in a method '
+                           'call but none of `model_attr`, `eval_as,` `template,` `prepare_{0}` is provided.'.format(unicode(self)))
 
     def json(self):
         json = {}

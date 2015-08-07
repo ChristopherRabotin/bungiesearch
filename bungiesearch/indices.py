@@ -78,7 +78,7 @@ class ModelIndex(object):
         '''
         :return: a dictionary which is used to get the serialized analyzer definition from the analyzer class.
         '''
-        analysis = {}    
+        analysis = {}
         for field in self.fields.values():
             for analyzer_name in ('analyzer', 'index_analyzer', 'search_analyzer'):
                 if not hasattr(field, analyzer_name):

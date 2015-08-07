@@ -52,7 +52,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
             data = create_indexed_document(index_instance, model_items[prev_step:next_step], action)
             bulk_index(src.get_es_instance(), data, index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
-        
+
         if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
 
@@ -74,7 +74,7 @@ def delete_index_item(item, model_name, refresh=True):
             src.get_es_instance().delete(index_name, model_name, item_es_id)
         except NotFoundError as e:
             logging.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
-        
+
         if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
 

@@ -3,7 +3,6 @@ import logging
 from optparse import make_option
 
 from django.core.management.base import BaseCommand
-from elasticsearch.helpers import bulk_index
 from six import iteritems
 
 from ... import Bungiesearch
@@ -132,9 +131,9 @@ class Command(BaseCommand):
                 mapping = {}
                 for mdl_idx in src.get_model_indices(index):
                     mapping[mdl_idx.get_model().__name__] = mdl_idx.get_mapping()
-                
+
                 analysis = mdl_idx.collect_analysis()
-                
+
                 logging.info('Creating index {} with {} doctypes.'.format(index, len(mapping)))
                 es.indices.create(index=index, body={'mappings': mapping, 'settings': {'analysis': analysis}})
 
