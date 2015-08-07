@@ -1,4 +1,4 @@
-from bungiesearch.fields import DateField, StringField
+from bungiesearch.fields import DateField, NumberField, StringField
 from bungiesearch.indices import ModelIndex
 
 from core.models import Article, User, NoUpdatedField
@@ -25,6 +25,15 @@ class ArticleIndex(ModelIndex):
 class UserIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.updated > obj.created else obj.updated')
     description = StringField(model_attr='description', analyzer=edge_ngram_analyzer)
+    int_description = NumberField(coretype='integer')
+
+    def prepare_int_description(self, obj):
+        try:
+            int_description = int(obj.description)
+        except ValueError:
+            int_description = 1
+
+        return int_description
 
     class Meta:
         model = User

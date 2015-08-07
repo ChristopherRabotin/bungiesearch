@@ -84,6 +84,7 @@ class CoreTestCase(TestCase):
                            }
         expected_user = {'properties': {'updated': {'type': 'date'},
                                         'description': {'type': 'string', 'analyzer': 'edge_ngram_analyzer'},
+                                        'int_description': {'type': 'integer'},
                                         'user_id': {'analyzer': 'snowball', 'type': 'string'},
                                         'effective_date': {'type': 'date'},
                                         'created': {'type': 'date'},
@@ -322,6 +323,26 @@ class CoreTestCase(TestCase):
             self.assertTrue(all([dbi in items for dbi in mdl.objects.all()]), 'Mapping after fields _id only search did not return all results for model {}.'.format(mdl))
             items = mdl.objects.search.fields([id_field, '_id', '_source'])[:5]
             self.assertTrue(all([dbi in items for dbi in mdl.objects.all()]), 'Mapping after fields _id, id and _source search did not return all results for model {}.'.format(mdl))
+
+    def test_prepare_field(self):
+        '''
+        Check that providing a method to calculate the value of a field will yield correct results in the search index.
+        '''
+        user_int_description = {'user_id': 'bungie3',
+                                'description': '123',
+                                'created': pytz.UTC.localize(datetime(year=2015, month=1, day=1)),
+                                'updated': pytz.UTC.localize(datetime(year=2015, month=6, day=1)),
+                                }
+        User.objects.create(**user_int_description)
+
+        find_one = User.objects.search.filter('term', int_description=1)
+        self.assertEqual(len(find_one), 4, 'Searching for users with default int description did not return exactly 4 items (got {})'.format(find_one))
+
+        find_123 = User.objects.search.filter('term', int_description=123)
+        self.assertEqual(len(find_one), 4, 'Searching for users with int description 123 did not return exactly 2 items (got {})'.format(find_123))
+
+        find_zero = User.objects.search.filter('term', int_description=0)
+        self.assertEqual(len(find_zero), 0, 'Searching for users with int description zero did not return exactly 0 items (got {})'.format(find_zero))
 
     def test_fun(self):
         '''

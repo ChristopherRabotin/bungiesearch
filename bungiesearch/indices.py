@@ -46,7 +46,6 @@ class ModelIndex(object):
         self.fields.update(self._get_fields(fields, excludes, hotfixes))
         # Elasticsearch uses '_id' to identify items uniquely, so let's duplicate that field.
         # We're duplicating it in order for devs to still perform searches on `.id` as expected.
-        self.fields['_id'] = self.fields[id_field]
         self.fields_to_fetch = list(set(self.fields.keys()).union(additional_fields))
 
         # Adding or updating the fields which are defined at class level.
@@ -57,6 +56,8 @@ class ModelIndex(object):
             if cls_attr in self.fields:
                 logging.info('Overwriting implicitly defined model field {} ({}) its explicit definition: {}.'.format(cls_attr, unicode(self.fields[cls_attr]), unicode(obj)))
             self.fields[cls_attr] = obj
+
+        self.fields['_id'] = self.fields[id_field]
 
     def matches_indexing_condition(self, item):
         '''
@@ -112,7 +113,17 @@ class ModelIndex(object):
             except Exception as e:
                 raise ValueError('Could not find object of primary key = {} in model {} (model index class {}). (Original exception: {}.)'.format(obj_pk, self.model, self.__class__.__name__, e))
 
-        return dict((name, field.value(obj)) for name, field in iteritems(self.fields))
+        serialized_object = {}
+
+        for name, field in iteritems(self.fields):
+            if hasattr(self, "prepare_%s" % name):
+                value = getattr(self, "prepare_%s" % name)(obj)
+            else:
+                value = field.value(obj)
+
+            serialized_object[name] = value
+
+        return serialized_object
 
     def _get_fields(self, fields, excludes, hotfixes):
         '''

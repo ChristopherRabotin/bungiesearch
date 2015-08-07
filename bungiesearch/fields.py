@@ -54,9 +54,6 @@ class AbstractField(object):
         self.eval_func = args.pop('eval_as', None)
         self.template_name = args.pop('template', None)
 
-        if not self.model_attr and not self.eval_func and not self.template_name:
-            raise KeyError('{} gets its value via a model attribute, an eval function, or a template, but neither of `model_attr`, `eval_as,` `template` is provided. Args were {}.'.format(unicode(self), args))
-
         for attr, value in iteritems(args):
             if attr not in self.fields and attr not in AbstractField.common_fields:
                 raise KeyError('Attribute `{}` is not allowed for core type {}.'.format(attr, self.coretype))
@@ -81,9 +78,19 @@ class AbstractField(object):
             except Exception as e:
                 raise type(e)('Could not compute value of {} field (eval_as=`{}`): {}.'.format(unicode(self), self.eval_func, unicode(e)))
 
-        if isinstance(obj, dict):
-            return obj[self.model_attr]
-        return getattr(obj, self.model_attr)
+        elif self.model_attr:
+            if isinstance(obj, dict):
+                return obj[self.model_attr]
+            current_obj = getattr(obj, self.model_attr)
+
+            if callable(current_obj):
+                return current_obj()
+            else:
+                return current_obj
+
+        else:
+            raise KeyError('{} gets its value via a model attribute, an eval function, a template, or is prepared in a method'
+                           'call but none of `model_attr`, `eval_as,` `template,` `prepare_{}` is provided.'.format(unicode(field), name))
 
     def json(self):
         json = {}
