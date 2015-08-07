@@ -42,5 +42,5 @@ class Command(BaseCommand):
                 print('No action taken: you must provide the --guilty-as-charged flag.')
                 sys.exit()
 
-        call_command('search_index', action='delete', confirmed='guilty-as-charged', **options)
+        call_command('search_index', action='delete', **options)
         call_command('search_index', action='create', **options)
