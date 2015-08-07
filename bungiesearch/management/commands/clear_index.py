@@ -27,7 +27,7 @@ class Command(BaseCommand):
             print('WARNING: This will irreparably remove EVERYTHING from your search index.')
             print('Your choices after this are to restore from backups or rebuild via the `rebuild_index` command.')
 
-            yes_or_no = six.moves.input('Are you sure you wish to continue? [y/N] ').lower()
+            yes_or_no = six.moves.input('Are you sure you wish to continue? [y/N] ')
             print
 
             if yes_or_no not in ['y', 'N']:
