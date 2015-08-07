@@ -25,8 +25,12 @@ class BungiesearchManager(Manager):
         from bungiesearch import Bungiesearch
         return Bungiesearch(raw_results=True).index(index).doc_type(doc_type)
 
-    def __init__(self, **kwargs):
-        super(BungiesearchManager, self).__init__(**kwargs)
+    def contribute_to_class(self, cls, name):
+        '''
+        Sets up the signal processor. Since self.model is not available
+        in the constructor, we perform this operation here.
+        '''
+        super(BungiesearchManager, self).contribute_to_class(cls, name)
 
         from . import Bungiesearch
         from .signals import get_signal_processor
