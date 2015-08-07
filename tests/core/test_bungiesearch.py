@@ -61,7 +61,7 @@ class CoreTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        call_command('search_index', action='delete', confirm='guilty-as-charged')
+        call_command('search_index', action='delete', confirmed='guilty-as-charged')
 
     def test_model_index_generation(self):
         '''
