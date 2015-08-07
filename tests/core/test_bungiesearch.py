@@ -57,7 +57,7 @@ class CoreTestCase(TestCase):
         User.objects.create(**user_2)
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
-        call_command('rebuild_index', interactive=False)
+        call_command('rebuild_index', interactive=False, confirmed='guilty-as-charged')
 
     @classmethod
     def tearDownClass(cls):
