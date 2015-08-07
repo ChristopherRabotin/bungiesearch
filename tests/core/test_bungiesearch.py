@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from bungiesearch import Bungiesearch
-from bungiesearch.management.commands import search_index
 from bungiesearch.utils import update_index
 from django.core.management import call_command
 from django.test import TestCase
@@ -58,11 +57,11 @@ class CoreTestCase(TestCase):
         User.objects.create(**user_2)
         NoUpdatedField.objects.create(title='My title', description='This is a short description.')
 
-        call_command('rebuild_index', interactive=False)
+        call_command('rebuild_index', interactive=False, confirmed='guilty-as-charged')
 
     @classmethod
     def tearDownClass(cls):
-        search_index.Command().run_from_argv(['tests', 'empty_arg', '--delete', '--guilty-as-charged'])
+        call_command('search_index', action='delete', confirmed='guilty-as-charged')
 
     def test_model_index_generation(self):
         '''
@@ -228,7 +227,7 @@ class CoreTestCase(TestCase):
         self.assertNotEqual(find_three[0:1:True].meta.index, find_three[1:2:True].meta.index, 'Searching for "three" did not return items from different indices.')
         # Let's now delete this object to test the post delete signal.
         obj.delete()
-    
+
     def test_bulk_delete(self):
         '''
         This tests that using the update_index function with 'delete' as the action performs a bulk delete operation on the data.
@@ -259,15 +258,15 @@ class CoreTestCase(TestCase):
 
         find_five = Article.objects.search.query('match', title='five')
         self.assertEqual(len(find_five), 2, 'Searching for "five" in title did not return exactly two results (got {})'.format(find_five))
-        
+
         model_items = [bulk_obj1.pk, bulk_obj2.pk]
         model_name = Article.__name__
         update_index(model_items, model_name, action='delete', bulk_size=2, num_docs=-1, start_date=None, end_date=None, refresh=True)
-        
+
         find_four = Article.objects.search.query('match', title='four')
-        self.assertEqual(len(find_four), 0, 'Searching for "four" in title did not return exactly zero results (got {})'.format(find_four))        
+        self.assertEqual(len(find_four), 0, 'Searching for "four" in title did not return exactly zero results (got {})'.format(find_four))
         find_five = Article.objects.search.query('match', title='five')
-        self.assertEqual(len(find_five), 0, 'Searching for "five" in title did not return exactly zero results (got {})'.format(find_five))        
+        self.assertEqual(len(find_five), 0, 'Searching for "five" in title did not return exactly zero results (got {})'.format(find_five))
 
     def test_manager_interference(self):
         '''
@@ -276,15 +275,8 @@ class CoreTestCase(TestCase):
         Unmanaged.objects.create(title='test', description='blah')
 
     def test_time_indexing(self):
-        try:
-            update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M'))
-        except Exception as e:
-            self.fail('update_index with a start date failed for model Article: {}.'.format(e))
-
-        try:
-            update_index(NoUpdatedField.objects.all(), 'NoUpdatedField', end_date=datetime.strftime(datetime.now(), '%Y-%m-%d'))
-        except Exception as e:
-            self.fail('update_index with a start date failed for model NoUpdatedField, which has no updated field: {}.'.format(e))
+        update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M'))
+        update_index(NoUpdatedField.objects.all(), 'NoUpdatedField', end_date=datetime.strftime(datetime.now(), '%Y-%m-%d'))
 
     def test_optimal_queries(self):
         db_item = NoUpdatedField.objects.get(pk=1)
@@ -304,7 +296,7 @@ class CoreTestCase(TestCase):
         match_one = Article.objects.search.query('match', text='one')
         self.assertEqual(len(match_one), 2, 'Searching for "one" in text did not return exactly one item (got {}).'.format(match_one))
         self.assertEqual(match_one[0].title, 'Title one', 'Searching for "one" in text did not yield the first article (got {})'.format(match_one[0].title))
-        
+
         # Two articles have a description that contain 'article'
         match_two = Article.objects.search.query('match', text='article')
         self.assertEqual(len(match_two), 4, 'Searching for "article" in text did not return exactly two items (got {})'.format(match_two))
