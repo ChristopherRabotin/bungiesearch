@@ -3,7 +3,8 @@ Bungiesearch
 
 |Build Status| |Coverage Status|
 
-.. contents::
+.. contents:: Table of contents
+   :depth: 2
 
 Purpose
 =======
@@ -552,7 +553,7 @@ managed models are set with ``default=False`` then Bungiesearch will
 fail to find and index that model.
 
 Example
-^^^^^^^
+~~~~~~~
 
 Indexes all objects of ``Article``, as long as their ``updated``
 datetime is less than `21 October 2015
@@ -665,7 +666,7 @@ module, and use both in conjunction as such:
 These aliases can be concatenated ad vitam aeternam.
 
 Sophisticated example
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 This example shows that we can have some fun with search aliases. In
 this case, we define a Range alias which is applicable to any field on
