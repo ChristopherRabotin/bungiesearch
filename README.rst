@@ -445,7 +445,7 @@ Class methods
 ~~~~~~~~~~~~~
 
 matches\_indexing\_condition
-''''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Override this function to specify whether an item should be indexed or
 not. This is useful when defining multiple indices (and ModelIndex
@@ -474,7 +474,7 @@ could also be a ``tuple``. ##### model *Required:* defines the Django
 model for which this ModelIndex is applicable.
 
 fields
-''''''
+^^^^^^
 
 *Optional:* list of fields (or columns) which must be fetched when
 serializing the object for elasticsearch, or when reverse mapping the
@@ -484,13 +484,13 @@ can be fetched and may lead to errors when serializing the object. It is
 recommended to use the ``exclude`` attribute instead (cf. below).
 
 exclude
-'''''''
+^^^^^^^
 
 *Optional:* list of fields (or columns) which must not be fetched when
 serializing or deserializing the object.
 
 hotfixes
-''''''''
+^^^^^^^^
 
 *Optional:* a dictionary whose keys are index fields and whose values
 are dictionaries which define `core type
@@ -503,20 +503,20 @@ is set to
 (``{'analyzer': 'snowball'}``).
 
 additional\_fields
-''''''''''''''''''
+^^^^^^^^^^^^^^^^^^
 
 *Optional:* additional fields to fetch for mapping, may it be for
 ``eval_as`` fields or when returning the object from the database.
 
 id\_field
-'''''''''
+^^^^^^^^^
 
 *Optional:* the model field to use as a unique ID for elasticsearch's
 metadata ``_id``. Defaults to ``id`` (also called
 ```pk`` <https://docs.djangoproject.com/en/dev/topics/db/models/#automatic-primary-key-fields>`__).
 
 updated\_field
-''''''''''''''
+^^^^^^^^^^^^^^
 
 *Optional:* set the model's field which can be filtered on dates in
 order to find when objects have been updated. Note, this is *mandatory*
@@ -524,7 +524,7 @@ to use ``--start`` and/or ``--end`` when updating index (with
 ``search_index --update``).
 
 optimize\_queries
-'''''''''''''''''
+^^^^^^^^^^^^^^^^^
 
 *Optional:* set to True to make efficient queries when automatically
 mapping to database objects. This will *always* restrict fetching to the
@@ -535,14 +535,14 @@ will use the same fields as ``optimize_queries``, or
 ``.fields()`` call.
 
 indexing\_query
-'''''''''''''''
+^^^^^^^^^^^^^^^
 
 *Optional:* set to a QuerySet instance to specify the query used when
 the search\_index command is ran to index. This **does not** affect how
 each piece of content is indexed.
 
 default
-'''''''
+^^^^^^^
 
 Enables support for a given model to be indexed on several elasticsearch
 indices. Set to ``False`` on all but the default index. **Note**: if all
@@ -636,14 +636,14 @@ Although not mandatory, the ``Meta`` subclass enabled custom naming and
 model restrictions for a search alias.
 
 models
-''''''
+^^^^^^
 
 *Optional:* ``list`` (or ``tuple``) of Django models which are allowed
 to use this search alias. If a model which is not allowed to use this
 SearchAlias tries it, a ``ValueError`` will be raised.
 
 alias\_name
-'''''''''''
+^^^^^^^^^^^
 
 *Optional:* A string corresponding the suffix name of this search alias.
 Defaults to the lower case class name.
