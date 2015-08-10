@@ -3,6 +3,8 @@ Bungiesearch
 
 |Build Status| |Coverage Status|
 
+.. contents::
+
 Purpose
 =======
 
