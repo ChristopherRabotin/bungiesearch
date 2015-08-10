@@ -1,5 +1,12 @@
-|Build Status| |Coverage Status| # Purpose Bungiesearch is a Django
-wrapper for
+Bungiesearch
+============
+
+|Build Status| |Coverage Status|
+
+Purpose
+=======
+
+Bungiesearch is a Django wrapper for
 `elasticsearch-dsl-py <https://github.com/elasticsearch/elasticsearch-dsl-py>`__.
 It inherits from elasticsearch-dsl-py's ``Search`` class, so all the
 fabulous features developed by the elasticsearch-dsl-py team are also

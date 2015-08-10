@@ -27,7 +27,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
     '''
     src = Bungiesearch()
 
-    if action == 'delete' and not isinstance(model_items, (list, tuple)):
+    if action == 'delete' and not hasattr(model_items, '__iter__'):
         raise ValueError("If action is 'delete', model_items must be an iterable of primary keys.")
 
     logging.info('Getting index for model {}.'.format(model_name))
