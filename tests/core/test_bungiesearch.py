@@ -9,6 +9,7 @@ from six import iteritems
 
 from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex, UserIndex
+from core.bungie_signal import BungieTestSignalProcessor
 
 
 class CoreTestCase(TestCase):
@@ -184,7 +185,7 @@ class CoreTestCase(TestCase):
         '''
         self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
         self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
-        self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_nonapplicablealias')
+        self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_noupdatedmdlonly')
 
     def test_search_aliases(self):
         '''
@@ -198,6 +199,7 @@ class CoreTestCase(TestCase):
         self.assertEqual(len(title_alias[:1]), 1, 'Get item on an alias search with start=None and stop=1 did not return one item.')
         self.assertEqual(len(title_alias[:2]), 2, 'Get item on an alias search with start=None and stop=2 did not return two item.')
         self.assertEqual(title_alias.to_dict(), Article.objects.bsearch_title('title').to_dict(), 'Alias applicable to all models does not return the same JSON request body as the model specific one.')
+        self.assertEqual(NoUpdatedField.objects.search.filter('term', title='My title').to_dict(), NoUpdatedField.objects.bsearch_noupdatedmdlonly('My title').to_dict(), 'Alias applicable only to NoUpdatedField does not generate the correct filter.')
 
     def test_bungie_instance_search_aliases(self):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
@@ -364,6 +366,7 @@ class CoreTestCase(TestCase):
     def test_specify_index(self):
         self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for Article does not match number in database.')
         self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo_bis').count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database.')
+        self.assertEqual(Article.objects.count(), Article.objects.bsearch_bisindex().count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database, using alias.')
         self.assertEqual(NoUpdatedField.objects.count(), NoUpdatedField.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for NoUpdatedField does not match number in database.')
         self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')
 
@@ -371,3 +374,13 @@ class CoreTestCase(TestCase):
         missing = Article.objects.search_index('bungiesearch_demo').filter('missing', field='text_field')
         self.assertEqual(len(missing), 1, 'Filtering by missing text_field does not return exactly one item.')
         self.assertEqual(missing[0].text_field, None, 'The item with missing text_field does not have text_field=None.')
+
+    def test_signal_setup_teardown(self):
+        '''
+        Tests that setup and tear down can be ran.
+        '''
+        btsp = BungieTestSignalProcessor()
+        btsp.setup(Article)
+        self.assertTrue(btsp.setup_ran, 'Calling setup on the signal processor did not set it up.')
+        btsp.teardown(Article)
+        self.assertTrue(btsp.teardown_ran, 'Calling teardown on the signal processor did not tear it down.')
