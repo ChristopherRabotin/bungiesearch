@@ -162,15 +162,17 @@ class Command(BaseCommand):
                         print('Continuing.')
 
         else:
-            if options['models']:
-                logging.info('Updating models {}.'.format(options['models']))
-                model_names = options['models'].split(',')
-            elif options['index']:
-                index = options['index']
-                logging.info('Updating all models on index {}.'.format(options['index']))
-                model_names = src.get_models(index)
+            if options['index']:
+                indices = options['index']
             else:
-                model_names = [model for index in src.get_indices() for model in src.get_models(index)]
+                indices = src.get_indices()
+            if options['models']:
+                model_names = options['models'].split(',')
+            else:
+                model_names = [model for index in indices for model in src.get_models(index)]
+
+            logging.info('Updating models {} on indices {}.'.format(model_names, indices))
+
             # Update index.
             for model_name in model_names:
                 if src.get_model_index(model_name).indexing_query is not None:
