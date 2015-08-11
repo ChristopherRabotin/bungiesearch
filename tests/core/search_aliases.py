@@ -23,7 +23,7 @@ class TitleFilter(SearchAlias):
     def alias_for(self, title):
         return self.search_instance.filter('term', title=title)
 
-class NonApplicableAlias(SearchAlias):
+class NoUpdatedMdlOnly(SearchAlias):
     def alias_for(self, title):
         return self.search_instance.filter('term', title=title)
 

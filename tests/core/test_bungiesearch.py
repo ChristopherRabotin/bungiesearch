@@ -185,7 +185,7 @@ class CoreTestCase(TestCase):
         '''
         self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
         self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
-        self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_nonapplicablealias')
+        self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_noupdatedmdlonly')
 
     def test_search_aliases(self):
         '''
@@ -199,6 +199,7 @@ class CoreTestCase(TestCase):
         self.assertEqual(len(title_alias[:1]), 1, 'Get item on an alias search with start=None and stop=1 did not return one item.')
         self.assertEqual(len(title_alias[:2]), 2, 'Get item on an alias search with start=None and stop=2 did not return two item.')
         self.assertEqual(title_alias.to_dict(), Article.objects.bsearch_title('title').to_dict(), 'Alias applicable to all models does not return the same JSON request body as the model specific one.')
+        self.assertEqual(NoUpdatedField.objects.search.filter('term', title='My title').to_dict(), NoUpdatedField.objects.bsearch_noupdatedmdlonly('My title').to_dict(), 'Alias applicable only to NoUpdatedField does not generate the correct filter.')
 
     def test_bungie_instance_search_aliases(self):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
@@ -365,6 +366,7 @@ class CoreTestCase(TestCase):
     def test_specify_index(self):
         self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for Article does not match number in database.')
         self.assertEqual(Article.objects.count(), Article.objects.search_index('bungiesearch_demo_bis').count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database.')
+        self.assertEqual(Article.objects.count(), Article.objects.bsearch_bisindex().count(), 'Indexed items on bungiesearch_demo_bis for Article does not match number in database, using alias.')
         self.assertEqual(NoUpdatedField.objects.count(), NoUpdatedField.objects.search_index('bungiesearch_demo').count(), 'Indexed items on bungiesearch_demo for NoUpdatedField does not match number in database.')
         self.assertEqual(NoUpdatedField.objects.search_index('bungiesearch_demo_bis').count(), 0, 'Indexed items on bungiesearch_demo_bis for NoUpdatedField is zero.')
 
