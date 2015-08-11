@@ -19,7 +19,9 @@ class BungieTestSignalProcessor(BungieSignalProcessor):
     def setup(self, model):
         signals.post_save.connect(self.handle_save, sender=model)
         signals.pre_delete.connect(self.handle_delete, sender=model)
+        self.setup_ran = True
 
     def teardown(self, model):
         signals.pre_delete.disconnect(self.handle_delete, sender=model)
         signals.post_save.disconnect(self.handle_save, sender=model)
+        self.teardown_ran = True

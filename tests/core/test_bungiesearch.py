@@ -9,6 +9,7 @@ from six import iteritems
 
 from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
 from core.search_indices import ArticleIndex, UserIndex
+from core.bungie_signal import BungieTestSignalProcessor
 
 
 class CoreTestCase(TestCase):
@@ -371,3 +372,13 @@ class CoreTestCase(TestCase):
         missing = Article.objects.search_index('bungiesearch_demo').filter('missing', field='text_field')
         self.assertEqual(len(missing), 1, 'Filtering by missing text_field does not return exactly one item.')
         self.assertEqual(missing[0].text_field, None, 'The item with missing text_field does not have text_field=None.')
+
+    def test_signal_setup_teardown(self):
+        '''
+        Tests that setup and tear down can be ran.
+        '''
+        btsp = BungieTestSignalProcessor()
+        btsp.setup(Article)
+        self.assertTrue(btsp.setup_ran, 'Calling setup on the signal processor did not set it up.')
+        btsp.teardown(Article)
+        self.assertTrue(btsp.teardown_ran, 'Calling teardown on the signal processor did not tear it down.')
