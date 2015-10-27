@@ -3,7 +3,7 @@ import logging
 from dateutil.parser import parse as parsedt
 from django.utils import timezone
 from elasticsearch.exceptions import NotFoundError
-from elasticsearch.helpers import bulk_index
+from elasticsearch.helpers import bulk
 
 from . import Bungiesearch
 
@@ -50,7 +50,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
         for next_step in range(bulk_size, max_docs, bulk_size):
             logging.info('{}: documents {} to {} of {} total on index {}.'.format(action.capitalize(), prev_step, next_step, num_docs, index_name))
             data = create_indexed_document(index_instance, model_items[prev_step:next_step], action)
-            bulk_index(src.get_es_instance(), data, index=index_name, doc_type=model.__name__, raise_on_error=True)
+            bulk(src.get_es_instance(), data, index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
 
         if refresh:
