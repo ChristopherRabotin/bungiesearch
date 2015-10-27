@@ -695,8 +695,9 @@ We can use it as such
 
 Settings
 --------
+Add 'bungiesearch' to INSTALLED_APPS.
 
-You must defined ``BUNGIESEARCH`` in your Django settings in order for
+You must define ``BUNGIESEARCH`` in your Django settings in order for
 bungiesearch to know elasticsearch URL(s) and which index name contains
 mappings for each ModelIndex.
 
