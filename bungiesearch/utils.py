@@ -3,7 +3,10 @@ import logging
 from dateutil.parser import parse as parsedt
 from django.utils import timezone
 from elasticsearch.exceptions import NotFoundError
-from elasticsearch.helpers import bulk_index
+try:
+    from elasticsearch.helpers import bulk_index
+except ImportError:
+    from elasticsearch.helpers import bulk as bulk_index
 
 from . import Bungiesearch
 
