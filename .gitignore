@@ -1,8 +1,9 @@
-/venv
 *.pyc
 *.egg
 
+/venv
 /build/
-/bungiesearch.egg-info/
 /dist/
-.cache/
+/cache/
+/.cache/
+/bungiesearch.egg-info/
