@@ -784,7 +784,7 @@ Testing
 
 All Bungiesearch tests are in ``tests/core/test_bungiesearch.py``. You
 can run the tests by creating a Python virtual environment, installing
-the requirements from ``tests/requirements.txt``, installing the package
+the requirements from ``requirements.txt``, installing the package
 (``pip install .``) and running ``python tests/manage.py test``. Make
 sure to update ``tests/settings.py`` to use your own elasticsearch URLs,
 or update the ELASTIC\_SEARCH\_URL environment variable.
