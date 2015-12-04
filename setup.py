@@ -3,7 +3,7 @@ import sys
 from os.path import join, dirname
 from setuptools import setup, find_packages
 
-VERSION = (1, 2, 2)
+VERSION = (1, 3, 0)
 __version__ = VERSION
 __versionstr__ = '.'.join(map(str, VERSION))
 
@@ -30,11 +30,11 @@ setup(
     name="bungiesearch",
     description="A Django elasticsearch wrapper and helper using elasticsearch-dsl-py high level library.",
     license="BSD-3",
-    url="https://github.com/sparrho/bungiesearch",
+    url="https://github.com/ChristopherRabotin/bungiesearch",
     long_description=long_description,
     version=__versionstr__,
     author="Christopher Rabotin",
-    author_email="christopher@sparrho.com",
+    author_email="christopher.rabotin@gmail.com",
     packages=find_packages(
         where='.',
         exclude=('bungiesearch/tests',)
@@ -47,7 +47,7 @@ setup(
         "Programming Language :: Python :: 2",
         "Framework :: Django"
     ],
-    keywords="elasticsearch haystack django bungiesearch sparrho",
+    keywords="elasticsearch haystack django bungiesearch",
     install_requires=install_requires,
     dependency_links=['https://github.com/elasticsearch/elasticsearch-dsl-py#egg=elasticsearch-dsl-py'],
 )
