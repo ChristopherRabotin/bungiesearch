@@ -1,16 +1,23 @@
 sudo: false
 language: python
-python:
-  - 2.7
 env:
   global:
     - TRAVIS=true
     - ELASTIC_SEARCH_URL=localhost
+matrix:
+  include:
+    - python: "2.7"
+      env: DJANGO_VERSION=">=1.7,<1.8"
+    - python: "2.7"
+      env: DJANGO_VERSION=">=1.8,<1.9"
+    - python: "2.7"
+      env: DJANGO_VERSION=">=1.9,<1.10" COVERAGE=true
 install:
+  - pip install Django$DJANGO_VERSION
   - pip install -r requirements.txt
   - wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.7.3.zip
   - unzip -o elasticsearch-1.7.3.zip &> /dev/null
 script:
   - ./runtests.sh --cluster
 after_success:
-  coveralls
+  test -n "$COVERAGE" && coveralls
