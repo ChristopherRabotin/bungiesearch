@@ -185,7 +185,7 @@ practical.
    them to be managed by Bungiesearch by adding the objects field to
    them, as such: ``objects = BungiesearchManager()``. You should now
    have a Django model `similar to
-   this <https://github.com/Sparrho/bungiesearch#django-model>`__.
+   this <https://github.com/ChristopherRabotin/bungiesearch#django-model>`__.
 
 Creating bungiesearch search indexes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,7 +193,7 @@ Creating bungiesearch search indexes
 The search indexes define how bungiesearch should serialize each of the
 model's objects. It effectively defines how your object is serialized
 and how the ES index should be structured. These are referred to as
-`ModelIndex <https://github.com/Sparrho/bungiesearch#modelindex-1>`__\ es.
+`ModelIndex <https://github.com/ChristopherRabotin/bungiesearch#modelindex-1>`__\ es.
 
 A good practice here is to have all the bungiesearch stuff in its own
 package. For example, for the section of the Sparrho platform that uses
@@ -214,17 +214,17 @@ we use (more on that latter).
    excluded in this ``Meta`` class, via the exclude field.
 5. There are plenty of options, so definitely have a read through the
    documentation for
-   `ModelIndex <https://github.com/Sparrho/bungiesearch#modelindex-1>`__.
+   `ModelIndex <https://github.com/ChristopherRabotin/bungiesearch#modelindex-1>`__.
 
 Here's `an
-example <https://github.com/Sparrho/bungiesearch#modelindex>`__ of a
+example <https://github.com/ChristopherRabotin/bungiesearch#modelindex>`__ of a
 search index. There can be many such definitions in a file.
 
 Django settings
 ~~~~~~~~~~~~~~~
 
 This is the final required step. Here's the `full
-documentation <https://github.com/Sparrho/bungiesearch#settings>`__ of
+documentation <https://github.com/ChristopherRabotin/bungiesearch#settings>`__ of
 this step.
 
 1. Open your settings file and add a ``BUNGIESEARCH`` variable, which
@@ -792,7 +792,7 @@ the requirements from ``requirements.txt``, installing the package
 sure to update ``tests/settings.py`` to use your own elasticsearch URLs,
 or update the ELASTIC\_SEARCH\_URL environment variable.
 
-.. |Build Status| image:: https://travis-ci.org/Sparrho/bungiesearch.svg?branch=master
-   :target: https://travis-ci.org/Sparrho/bungiesearch
+.. |Build Status| image:: https://travis-ci.org/ChristopherRabotin/bungiesearch.svg?branch=master
+   :target: https://travis-ci.org/ChristopherRabotin/bungiesearch
 .. |Coverage Status| image:: https://coveralls.io/repos/Sparrho/bungiesearch/badge.svg?branch=master&service=github
    :target: https://coveralls.io/github/Sparrho/bungiesearch?branch=master
