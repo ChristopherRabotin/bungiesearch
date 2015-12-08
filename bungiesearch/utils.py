@@ -44,6 +44,9 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
             else:
                 model_items = filter_model_items(index_instance, model_items, model_name, start_date, end_date)
                 num_docs = model_items.count()
+
+                if not model_items.ordered:
+                    model_items = model_items.order_by('pk')
         else:
             logging.warning('Limiting the number of model_items to {} to {}.'.format(action, num_docs))
 
