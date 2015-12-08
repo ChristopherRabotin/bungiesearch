@@ -794,5 +794,5 @@ or update the ELASTIC\_SEARCH\_URL environment variable.
 
 .. |Build Status| image:: https://travis-ci.org/ChristopherRabotin/bungiesearch.svg?branch=master
    :target: https://travis-ci.org/ChristopherRabotin/bungiesearch
-.. |Coverage Status| image:: https://coveralls.io/repos/Sparrho/bungiesearch/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/github/Sparrho/bungiesearch?branch=master
+.. |Coverage Status| image:: https://coveralls.io/repos/ChristopherRabotin/bungiesearch/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/ChristopherRabotin/bungiesearch?branch=master
