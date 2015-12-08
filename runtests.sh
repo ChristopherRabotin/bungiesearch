@@ -67,7 +67,7 @@ fi
 python -B tests/manage.py test
 
 # only collect coverage in travis ci
-if [ ${TRAVIS} ]; then
+if [ ${COVERAGE} ]; then
   echo 'Starting to collect coverage...'
   coverage run --source=tests tests/manage.py test
 fi
