@@ -220,7 +220,7 @@ class Bungiesearch(Search):
 
         urls = urls or Bungiesearch.BUNGIE['URLS']
         if not timeout:
-            timeout = getattr(Bungiesearch.BUNGIE, 'TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
+            timeout = Bungiesearch.BUNGIE.get('TIMEOUT', Bungiesearch.DEFAULT_TIMEOUT)
 
         search_keys = ['using', 'index', 'doc_type', 'extra']
         search_settings, es_settings = {}, {}
