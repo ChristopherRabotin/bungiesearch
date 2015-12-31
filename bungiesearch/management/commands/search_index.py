@@ -78,13 +78,19 @@ class Command(BaseCommand):
             default=None,
             type='str',
             help='Specify the end date and time of documents to be indexed.'),
+        make_option('--timeout',
+            action='store',
+            dest='timeout',
+            default=None,
+            type='int',
+            help='Specify the timeout in seconds for each operation.')
         )
 
     def handle(self, *args, **options):
         del args
         logging.basicConfig(level='INFO')
 
-        src = Bungiesearch()
+        src = Bungiesearch(timeout=options.get('timeout'))
         es = src.get_es_instance()
 
         if not options['action']:
