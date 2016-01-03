@@ -4,6 +4,8 @@ from django.db.models import Manager
 
 
 class BungiesearchManager(Manager):
+    model = None
+
     '''
     A Django manager for integrated search into models.
     '''
@@ -45,4 +47,8 @@ class BungiesearchManager(Manager):
         this is only called as a last resort in case the attribute is not found.
         This function will check whether the given model is allowed to use the proposed alias and will raise an attribute error if not.
         '''
+        # Don't treat "private" attrs as possible aliases. This prevents an infinite recursion bug.
+        if alias[0] == '_':
+            raise AttributeError("'{}' object has no attribute '{}'".format(type(self), alias))
+
         return self.search.hook_alias(alias, self.model)
