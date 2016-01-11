@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
-from os.path import join, dirname
-from setuptools import setup, find_packages
+from os.path import dirname, join
+
+from setuptools import find_packages, setup
 
 VERSION = (1, 3, 0)
 __version__ = VERSION

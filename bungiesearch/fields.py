@@ -1,7 +1,7 @@
-from django.template import Context, loader
-from django.template.defaultfilters import striptags
 from six import iteritems
 
+from django.template import Context, loader
+from django.template.defaultfilters import striptags
 from elasticsearch_dsl.analysis import Analyzer
 
 

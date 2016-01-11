@@ -1,14 +1,17 @@
 import logging
 
 from dateutil.parser import parse as parsedt
+
 from django.utils import timezone
 from elasticsearch.exceptions import NotFoundError
+
+from . import Bungiesearch
+
 try:
     from elasticsearch.helpers import bulk_index
 except ImportError:
     from elasticsearch.helpers import bulk as bulk_index
 
-from . import Bungiesearch
 
 
 def update_index(model_items, model_name, action='index', bulk_size=100, num_docs=-1, start_date=None, end_date=None, refresh=True):

@@ -1,7 +1,6 @@
 from bungiesearch.fields import DateField, NumberField, StringField
 from bungiesearch.indices import ModelIndex
-
-from core.models import Article, User, NoUpdatedField
+from core.models import Article, NoUpdatedField, User
 
 from .analysis import edge_ngram_analyzer
 
