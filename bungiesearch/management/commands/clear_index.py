@@ -20,6 +20,12 @@ class Command(BaseCommand):
             dest='confirmed',
             default=False,
             help='Flag needed to confirm the clear index.'),
+        make_option('--timeout',
+            action='store',
+            dest='timeout',
+            default=None,
+            type='int',
+            help='Specify the timeout in seconds for each operation.')
        )
 
     def handle(self, **options):
