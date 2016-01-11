@@ -1,4 +1,4 @@
-from _collections import defaultdict
+from collections import defaultdict
 from elasticsearch_dsl.search import Search
 from importlib import import_module
 import logging

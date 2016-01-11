@@ -1,7 +1,6 @@
 from bungiesearch.fields import DateField, StringField
 from bungiesearch.indices import ModelIndex
-
-from core.models import Article, User, ManangedButEmpty
+from core.models import Article, ManangedButEmpty, User
 
 
 class ArticleIndex(ModelIndex):
@@ -45,4 +44,3 @@ class EmptyIndex(ModelIndex):
         model = ManangedButEmpty
         exclude = ('description',)
         optimize_queries = True
-

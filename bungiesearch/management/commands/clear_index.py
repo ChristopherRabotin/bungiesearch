@@ -1,5 +1,5 @@
-from optparse import make_option
 import sys
+from optparse import make_option
 
 from django.core.management import call_command
 from django.core.management.base import BaseCommand

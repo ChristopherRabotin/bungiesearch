@@ -1,5 +1,4 @@
 from bungiesearch.aliases import SearchAlias
-
 from core.models import Article, NoUpdatedField
 
 

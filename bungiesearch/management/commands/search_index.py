@@ -1,9 +1,10 @@
-from _collections import defaultdict
 import logging
+from collections import defaultdict
 from optparse import make_option
 
-from django.core.management.base import BaseCommand
 from six import iteritems
+
+from django.core.management.base import BaseCommand
 
 from ... import Bungiesearch
 from ...utils import update_index

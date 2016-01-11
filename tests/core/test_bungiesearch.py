@@ -1,15 +1,16 @@
 from datetime import datetime
 
-from bungiesearch import Bungiesearch
-from bungiesearch.utils import update_index
-from django.core.management import call_command
-from django.test import TestCase
-import pytz
 from six import iteritems
 
-from core.models import Article, User, Unmanaged, NoUpdatedField, ManangedButEmpty
-from core.search_indices import ArticleIndex, UserIndex
+import pytz
+from bungiesearch import Bungiesearch
+from bungiesearch.utils import update_index
 from core.bungie_signal import BungieTestSignalProcessor
+from core.models import (Article, ManangedButEmpty, NoUpdatedField, Unmanaged,
+                         User)
+from core.search_indices import ArticleIndex, UserIndex
+from django.core.management import call_command
+from django.test import TestCase
 
 
 class CoreTestCase(TestCase):

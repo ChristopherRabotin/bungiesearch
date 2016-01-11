@@ -1,10 +1,10 @@
-from _collections import defaultdict
+from collections import defaultdict
 from importlib import import_module
 
 from django.db.models import signals
 
 from . import Bungiesearch
-from .utils import update_index, delete_index_item
+from .utils import delete_index_item, update_index
 
 
 def get_signal_processor():

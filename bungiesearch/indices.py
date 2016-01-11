@@ -1,8 +1,8 @@
 import logging
 
-from bungiesearch.fields import AbstractField, django_field_to_index
 from six import iteritems, text_type
 
+from bungiesearch.fields import AbstractField, django_field_to_index
 from elasticsearch_dsl.analysis import Analyzer
 
 
