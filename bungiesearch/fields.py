@@ -12,7 +12,7 @@ class AbstractField(object):
 
     Values are extracted using the `model_attr` or `eval_as` attribute.
     '''
-    common_fields = ['index_name', 'store', 'index', 'boost', 'null_value', 'copy_to']
+    common_fields = ['index_name', 'store', 'index', 'boost', 'null_value', 'copy_to', 'type', 'fields']
     @property
     def fields(self):
         try:
