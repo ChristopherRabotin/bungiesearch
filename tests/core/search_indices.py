@@ -23,27 +23,29 @@ class ArticleIndex(ModelIndex):
 
 class UserIndex(ModelIndex):
     effective_date = DateField(eval_as='obj.created if obj.created and obj.updated > obj.created else obj.updated')
-    description = StringField(model_attr='description', analyzer=edge_ngram_analyzer)
-    int_description = NumberField(coretype='integer')
+    about = StringField(model_attr='about', analyzer=edge_ngram_analyzer)
+    int_about = NumberField(coretype='integer')
 
-    def prepare_int_description(self, obj):
+    def prepare_int_about(self, obj):
         try:
-            int_description = int(obj.description)
+            int_about = int(obj.about)
         except ValueError:
-            int_description = 1
+            int_about = 1
 
-        return int_description
+        return int_about
 
     class Meta:
         model = User
         id_field = 'user_id'
         updated_field = 'updated'
+        hotfixes = {'updated': {'null_value': '2013-07-01'},
+                    'about': {'boost': 1.35}}
         default = True
 
 
 class NoUpdatedFieldIndex(ModelIndex):
     class Meta:
         model = NoUpdatedField
-        exclude = ('description',)
+        exclude = ('field_description',)
         optimize_queries = True
         indexing_query = NoUpdatedField.objects.defer(*exclude).select_related().all()

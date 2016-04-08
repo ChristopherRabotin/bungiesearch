@@ -31,7 +31,7 @@ class UserIndex(ModelIndex):
         exclude = ('raw', 'missing_data', 'negative_feedback', 'positive_feedback', 'popularity_index', 'source_hash')
         hotfixes = {'updated': {'null_value': '2013-07-01'},
                     'title': {'boost': 1.75},
-                    'description': {'boost': 1.35},
+                    'about': {'boost': 1.35},
                     'full_text': {'boost': 1.125}}
         default = False
 
@@ -42,5 +42,5 @@ class EmptyIndex(ModelIndex):
 
     class Meta:
         model = ManangedButEmpty
-        exclude = ('description',)
+        exclude = ('field_description',)
         optimize_queries = True

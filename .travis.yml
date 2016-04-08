@@ -23,8 +23,8 @@ matrix:
 install:
   - pip install Django$DJANGO_VERSION
   - pip install -r requirements.txt
-  - wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.7.3.zip
-  - unzip -o elasticsearch-1.7.3.zip &> /dev/null
+  - wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-2.3.0.zip
+  - unzip -o elasticsearch-2.3.0.zip &> /dev/null
 script:
   - ./runtests.sh --cluster
 after_success:
