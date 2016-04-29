@@ -7,7 +7,7 @@ CLUSTER_URL=http://127.0.0.1:9200
 ES_PATH=elasticsearch
 
 if [ ${TRAVIS} ]; then
-  ES_PATH=./elasticsearch-1.7.3/bin/elasticsearch
+  ES_PATH=./elasticsearch-2.3.0/bin/elasticsearch
 fi
 
 function has_command() {
@@ -35,7 +35,7 @@ if ! is_responding $CLUSTER_URL; then
   else
     if [ "$1" != "--cluster" ]; then
       echo 'Starting single elasticsearch node'
-      $ES_PATH &> /dev/null &
+      $ES_PATH -D es.index.number_of_replicas=0 &> /dev/null &
       wait_for_cluster 1
     else
       echo 'Starting elasticsearch cluster with 2 nodes'
@@ -44,6 +44,7 @@ if ! is_responding $CLUSTER_URL; then
         -D es.node.name="mycluster-node2" \
         -D es.node.master=true \
         -D es.node.data=false \
+        -D es.index.number_of_replicas=0 \
         -D es.network.host=127.0.0.1 \
         -D es.foreground=yes \
         -D es.discovery.zen.ping.multicast.enabled=false \
@@ -54,6 +55,7 @@ if ! is_responding $CLUSTER_URL; then
         -D es.node.name="mycluster-node2" \
         -D es.node.master=false \
         -D es.node.data=true \
+        -D es.index.number_of_replicas=0 \
         -D es.network.host=127.0.0.1 \
         -D es.foreground=yes \
         -D es.discovery.zen.ping.multicast.enabled=false \

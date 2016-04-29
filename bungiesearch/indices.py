@@ -68,11 +68,14 @@ class ModelIndex(object):
     def get_model(self):
         return self.model
 
-    def get_mapping(self):
+    def get_mapping(self, meta_fields=True):
         '''
+        Returns the mapping for the index as a dictionary.
+
+        :param meta_fields: Also include elasticsearch meta fields in the dictionary.
         :return: a dictionary which can be used to generate the elasticsearch index mapping for this doctype.
         '''
-        return {'properties': dict((name, field.json()) for name, field in iteritems(self.fields))}
+        return {'properties': dict((name, field.json()) for name, field in iteritems(self.fields) if meta_fields or name not in AbstractField.meta_fields)}
 
     def collect_analysis(self):
         '''
@@ -103,7 +106,7 @@ class ModelIndex(object):
         Serializes an object for it to be added to the index.
 
         :param obj: Object to be serialized. Optional if obj_pk is passed.
-        :param obj_pk: Object primary key. Supersedded by `obj` if available.
+        :param obj_pk: Object primary key. Superseded by `obj` if available.
         :return: A dictionary representing the object as defined in the mapping.
         '''
         if not obj:

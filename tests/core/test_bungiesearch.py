@@ -35,7 +35,7 @@ class CoreTestCase(TestCase):
                  }
 
         user_1 = {'user_id': 'bungie1',
-                  'description': 'Description of user 1',
+                  'about': 'Description of user 1',
                   'created': pytz.UTC.localize(datetime(year=2015, month=1, day=1)),
                   'updated': pytz.UTC.localize(datetime(year=2015, month=6, day=1)),
                  }
@@ -52,12 +52,12 @@ class CoreTestCase(TestCase):
 
         user_2 = dict((k, v) for k, v in iteritems(user_1))
         user_2['user_id'] = 'bungie2'
-        user_2['description'] = 'This is the second user'
+        user_2['about'] = 'This is the second user'
         user_2['created'] = pytz.UTC.localize(datetime(year=2010, month=9, day=15))
 
         Article.objects.create(**art_2)
         User.objects.create(**user_2)
-        NoUpdatedField.objects.create(title='My title', description='This is a short description.')
+        NoUpdatedField.objects.create(field_title='My title', field_description='This is a short description.')
 
         call_command('rebuild_index', interactive=False, confirmed='guilty-as-charged')
 
@@ -90,9 +90,9 @@ class CoreTestCase(TestCase):
                                            '_id': {'type': 'integer'}, # This is the elastic search index.
                                            'published': {'type': 'date'}}
                            }
-        expected_user = {'properties': {'updated': {'type': 'date'},
-                                        'description': {'type': 'string', 'analyzer': 'edge_ngram_analyzer'},
-                                        'int_description': {'type': 'integer'},
+        expected_user = {'properties': {'updated': {'type': 'date', 'null_value': '2013-07-01'},
+                                        'about': {'type': 'string', 'analyzer': 'edge_ngram_analyzer'},
+                                        'int_about': {'type': 'integer'},
                                         'user_id': {'analyzer': 'snowball', 'type': 'string'},
                                         'effective_date': {'type': 'date'},
                                         'created': {'type': 'date'},
@@ -110,7 +110,7 @@ class CoreTestCase(TestCase):
         self.assertEqual(Article.objects.search.query('match', _all='Description')[0], Article.objects.get(title='Title one'), 'Searching for "Description" did not return just the first Article.')
         self.assertEqual(Article.objects.search.query('match', _all='second article')[0], Article.objects.get(title='Title two'), 'Searching for "second article" did not return the second Article.')
 
-        self.assertEqual(User.objects.search.query('match', _all='Description')[0], User.objects.get(user_id='bungie1'), 'Searching for "Description" did not return the User.')
+        self.assertEqual(User.objects.search.query('match', _all='Description')[0], User.objects.get(user_id='bungie1'), 'Searching for "About" did not return the User.')
         self.assertEqual(User.objects.search.query('match', _all='second user')[0], User.objects.get(user_id='bungie2'), 'Searching for "second user" did not return the User.')
 
     def test_raw_fetch(self):
@@ -134,7 +134,7 @@ class CoreTestCase(TestCase):
         self.assertEqual(len(lazy_search_article[:1]), 1, 'Get item with start=None and stop=1 did not return one item.')
         self.assertEqual(len(lazy_search_article[:2]), 2, 'Get item with start=None and stop=2 did not return two item.')
 
-        lazy_search_user = User.objects.search.query('match', description='user')
+        lazy_search_user = User.objects.search.query('match', about='user')
         db_items = list(User.objects.all())
         self.assertTrue(all([result in db_items for result in lazy_search_user]), 'Searching for description "user" did not return all articles.')
         self.assertTrue(all([result in db_items for result in lazy_search_user[:]]), 'Searching for description "user" did not return all articles when using empty slice.')
@@ -167,7 +167,7 @@ class CoreTestCase(TestCase):
         es_user1 = search.query('match', _all='Description')[0]
         db_user1 = User.objects.get(user_id='bungie1')
         self.assertRaises(AttributeError, getattr, es_user1, 'id')
-        self.assertTrue(all([es_user1.user_id == db_user1.user_id, es_user1.description == db_user1.description]), 'Searching for "Description" did not return the first User.')
+        self.assertTrue(all([es_user1.user_id == db_user1.user_id, es_user1.about == db_user1.about]), 'Searching for "About" did not return the first User.')
 
     def test_get_model(self):
         '''
@@ -210,7 +210,7 @@ class CoreTestCase(TestCase):
 
     def test_bungie_instance_search_aliases(self):
         alias_dictd = Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter').to_dict()
-        expected = {'query': {'filtered': {'filter': {'term': {'title': 'title filter'}}, 'query': {'match': {'title': 'title query'}}}}}
+        expected = {'query': {'bool': {'filter': [{'term': {'title': 'title filter'}}], 'must': [{'match': {'title': 'title query'}}]}}}
         self.assertEqual(alias_dictd, expected, 'Alias on Bungiesearch instance did not return the expected dictionary.')
 
     def test_search_alias_model(self):
@@ -281,7 +281,7 @@ class CoreTestCase(TestCase):
         '''
         This tests that saving an object which is not managed by Bungiesearch won't try to update the index for that model.
         '''
-        Unmanaged.objects.create(title='test', description='blah')
+        Unmanaged.objects.create(field_title='test', field_description='blah')
 
     def test_time_indexing(self):
         update_index(Article.objects.all(), 'Article', start_date=datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M'))
@@ -289,13 +289,13 @@ class CoreTestCase(TestCase):
 
     def test_optimal_queries(self):
         db_item = NoUpdatedField.objects.get(pk=1)
-        src_item = NoUpdatedField.objects.search.query('match', title='My title')[0]
+        src_item = NoUpdatedField.objects.search.query('match', field_title='My title')[0]
         self.assertEqual(src_item.id, db_item.id, 'Searching for the object did not return the expected object id.')
         self.assertTrue(src_item._meta.proxy, 'Was expecting a proxy model after fetching item.')
         self.assertEqual(src_item._meta.proxy_for_model, NoUpdatedField, 'Proxy for model of search item is not "NoUpdatedField".')
 
     def test_concat_queries(self):
-        items = Article.objects.bsearch_title_search('title')[::False] + NoUpdatedField.objects.search.query('match', title='My title')[::False]
+        items = Article.objects.bsearch_title_search('title')[::False] + NoUpdatedField.objects.search.query('match', field_title='My title')[::False]
         for item in items:
             model = item._meta.proxy_for_model if item._meta.proxy_for_model else type(item)
             self.assertIn(model, [Article, NoUpdatedField], 'Got an unmapped item ({}), or an item with an unexpected mapping.'.format(type(item)))
@@ -331,19 +331,19 @@ class CoreTestCase(TestCase):
         Check that providing a method to calculate the value of a field will yield correct results in the search index.
         '''
         user_int_description = {'user_id': 'bungie3',
-                                'description': '123',
+                                'about': '123',
                                 'created': pytz.UTC.localize(datetime(year=2015, month=1, day=1)),
                                 'updated': pytz.UTC.localize(datetime(year=2015, month=6, day=1)),
                                 }
         User.objects.create(**user_int_description)
 
-        find_one = User.objects.search.filter('term', int_description=1)
+        find_one = User.objects.search.filter('term', int_about=1)
         self.assertEqual(len(find_one), 4, 'Searching for users with default int description did not return exactly 4 items (got {})'.format(find_one))
 
-        find_123 = User.objects.search.filter('term', int_description=123)
+        find_123 = User.objects.search.filter('term', int_about=123)
         self.assertEqual(len(find_one), 4, 'Searching for users with int description 123 did not return exactly 2 items (got {})'.format(find_123))
 
-        find_zero = User.objects.search.filter('term', int_description=0)
+        find_zero = User.objects.search.filter('term', int_about=0)
         self.assertEqual(len(find_zero), 0, 'Searching for users with int description zero did not return exactly 0 items (got {})'.format(find_zero))
 
     def test_fun(self):
@@ -365,7 +365,7 @@ class CoreTestCase(TestCase):
         '''
         Tests that the indexing condition controls indexing properly.
         '''
-        mbeo = ManangedButEmpty.objects.create(title='Some time', description='This should never be indexed.')
+        mbeo = ManangedButEmpty.objects.create(field_title='Some time', field_description='This should never be indexed.')
         idxi = len(ManangedButEmpty.objects.search)
         self.assertEquals(idxi, 0, 'ManagedButEmpty has {} indexed items instead of zero.'.format(idxi))
         mbeo.delete()
