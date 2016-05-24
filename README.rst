@@ -578,7 +578,7 @@ datetime is less than `21 October 2015
                         'title': {'boost': 1.75},
                         'description': {'boost': 1.35},
                         'full_text': {'boost': 1.125}}
-            optimized_queries = True
+            optimize_queries = True
             indexing_query = Article.objects.defer(*exclude).select_related().all().prefetch_related('tags')
 
 SearchAlias
