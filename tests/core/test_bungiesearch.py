@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from django.core.management import call_command
+from django.test import TestCase
 from six import iteritems
 
 import pytz
@@ -9,8 +11,6 @@ from core.bungie_signal import BungieTestSignalProcessor
 from core.models import (Article, ManangedButEmpty, NoUpdatedField, Unmanaged,
                          User)
 from core.search_indices import ArticleIndex, UserIndex
-from django.core.management import call_command
-from django.test import TestCase
 
 
 class CoreTestCase(TestCase):

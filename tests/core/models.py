@@ -1,5 +1,6 @@
-from bungiesearch.managers import BungiesearchManager
 from django.db import models
+
+from bungiesearch.managers import BungiesearchManager
 
 
 class Article(models.Model):

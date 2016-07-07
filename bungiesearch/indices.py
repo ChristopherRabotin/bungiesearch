@@ -1,9 +1,9 @@
-import logging
-
 from six import iteritems, text_type
 
-from bungiesearch.fields import AbstractField, django_field_to_index
 from elasticsearch_dsl.analysis import Analyzer
+
+from .fields import AbstractField, django_field_to_index
+from .logger import logger
 
 
 class ModelIndex(object):
@@ -54,7 +54,7 @@ class ModelIndex(object):
                 continue
 
             if cls_attr in self.fields:
-                logging.info('Overwriting implicitly defined model field {} ({}) its explicit definition: {}.'.format(cls_attr, text_type(self.fields[cls_attr]), text_type(obj)))
+                logger.info('Overwriting implicitly defined model field {} ({}) its explicit definition: {}.'.format(cls_attr, text_type(self.fields[cls_attr]), text_type(obj)))
             self.fields[cls_attr] = obj
 
         self.fields['_id'] = self.fields[id_field]

@@ -1,17 +1,15 @@
-import logging
-
 from dateutil.parser import parse as parsedt
-
 from django.utils import timezone
+
 from elasticsearch.exceptions import NotFoundError
 
 from . import Bungiesearch
+from .logger import logger
 
 try:
     from elasticsearch.helpers import bulk_index
 except ImportError:
     from elasticsearch.helpers import bulk as bulk_index
-
 
 
 def update_index(model_items, model_name, action='index', bulk_size=100, num_docs=-1, start_date=None, end_date=None, refresh=True):
@@ -36,7 +34,7 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
     if action == 'delete' and not hasattr(model_items, '__iter__'):
         raise ValueError("If action is 'delete', model_items must be an iterable of primary keys.")
 
-    logging.info('Getting index for model {}.'.format(model_name))
+    logger.info('Getting index for model {}.'.format(model_name))
     for index_name in src.get_index(model_name):
         index_instance = src.get_model_index(model_name)
         model = index_instance.get_model()
@@ -51,19 +49,20 @@ def update_index(model_items, model_name, action='index', bulk_size=100, num_doc
                 if not model_items.ordered:
                     model_items = model_items.order_by('pk')
         else:
-            logging.warning('Limiting the number of model_items to {} to {}.'.format(action, num_docs))
+            logger.warning('Limiting the number of model_items to {} to {}.'.format(action, num_docs))
 
-        logging.info('{} {} documents on index {}'.format(action, num_docs, index_name))
+        logger.info('{} {} documents on index {}'.format(action, num_docs, index_name))
         prev_step = 0
         max_docs = num_docs + bulk_size if num_docs > bulk_size else bulk_size + 1
         for next_step in range(bulk_size, max_docs, bulk_size):
-            logging.info('{}: documents {} to {} of {} total on index {}.'.format(action.capitalize(), prev_step, next_step, num_docs, index_name))
+            logger.info('{}: documents {} to {} of {} total on index {}.'.format(action.capitalize(), prev_step, next_step, num_docs, index_name))
             data = create_indexed_document(index_instance, model_items[prev_step:next_step], action)
             bulk_index(src.get_es_instance(), data, index=index_name, doc_type=model.__name__, raise_on_error=True)
             prev_step = next_step
 
         if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
+
 
 def delete_index_item(item, model_name, refresh=True):
     '''
@@ -75,17 +74,18 @@ def delete_index_item(item, model_name, refresh=True):
     '''
     src = Bungiesearch()
 
-    logging.info('Getting index for model {}.'.format(model_name))
+    logger.info('Getting index for model {}.'.format(model_name))
     for index_name in src.get_index(model_name):
         index_instance = src.get_model_index(model_name)
         item_es_id = index_instance.fields['_id'].value(item)
         try:
             src.get_es_instance().delete(index_name, model_name, item_es_id)
         except NotFoundError as e:
-            logging.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
+            logger.warning('NotFoundError: could not delete {}.{} from index {}: {}.'.format(model_name, item_es_id, index_name, str(e)))
 
         if refresh:
             src.get_es_instance().indices.refresh(index=index_name)
+
 
 def create_indexed_document(index_instance, model_items, action):
     '''
@@ -102,10 +102,11 @@ def create_indexed_document(index_instance, model_items, action):
                 data.append(index_instance.serialize_object(doc))
     return data
 
+
 def filter_model_items(index_instance, model_items, model_name, start_date, end_date):
     ''' Filters the model items queryset based on start and end date.'''
     if index_instance.updated_field is None:
-        logging.warning("No updated date field found for {} - not restricting with start and end date".format(model_name))
+        logger.warning("No updated date field found for {} - not restricting with start and end date".format(model_name))
     else:
         if start_date:
             model_items = model_items.filter(**{'{}__gte'.format(index_instance.updated_field): __str_to_tzdate__(start_date)})
@@ -113,6 +114,7 @@ def filter_model_items(index_instance, model_items, model_name, start_date, end_
             model_items = model_items.filter(**{'{}__lte'.format(index_instance.updated_field): __str_to_tzdate__(end_date)})
 
     return model_items
+
 
 def __str_to_tzdate__(date_str):
     return timezone.make_aware(parsedt(date_str), timezone.get_current_timezone())

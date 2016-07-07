@@ -1,6 +1,7 @@
-from bungiesearch import Bungiesearch
 from django.conf import settings
 from django.test import TestCase
+
+from bungiesearch import Bungiesearch
 
 
 class SettingsTestCase(TestCase):
