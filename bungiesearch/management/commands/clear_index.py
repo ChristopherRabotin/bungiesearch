@@ -11,21 +11,21 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('--noinput',
-            action='store_false',
-            dest='interactive',
-            default=True,
-            help='If provided, no prompts will be issued to the user and the data will be wiped out'),
+                    action='store_false',
+                    dest='interactive',
+                    default=True,
+                    help='If provided, no prompts will be issued to the user and the data will be wiped out'),
         make_option('--guilty-as-charged',
-            action='store_true',
-            dest='confirmed',
-            default=False,
-            help='Flag needed to confirm the clear index.'),
+                    action='store_true',
+                    dest='confirmed',
+                    default=False,
+                    help='Flag needed to confirm the clear index.'),
         make_option('--timeout',
-            action='store',
-            dest='timeout',
-            default=None,
-            type='int',
-            help='Specify the timeout in seconds for each operation.')
+                    action='store',
+                    dest='timeout',
+                    default=None,
+                    type='int',
+                    help='Specify the timeout in seconds for each operation.')
        )
 
     def handle(self, **options):

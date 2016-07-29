@@ -4,8 +4,9 @@ to test the functionality of the default signal processor while using a
 custom processor instead, hence testing that we can plug in and use a custom
 signal processor.
 '''
-from bungiesearch.signals import BungieSignalProcessor
 from django.db.models import signals
+
+from bungiesearch.signals import BungieSignalProcessor
 
 
 class BungieTestSignalProcessor(BungieSignalProcessor):
