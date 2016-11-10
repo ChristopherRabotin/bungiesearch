@@ -67,35 +67,35 @@ class Command(BaseCommand):
             action='store',
             dest='bulk_size',
             default=100,
-            type='int',
+            type=int,
             help='Specify the number of items to be updated together.')
         parser.add_argument(
             '--num-docs',
             action='store',
             dest='num_docs',
             default=-1,
-            type='int',
+            type=int,
             help='Specify the maximum number of items to be indexed. By default will index the whole model.')
         parser.add_argument(
             '--start',
             action='store',
             dest='start_date',
             default=None,
-            type='str',
+            type=str,
             help='Specify the start date and time of documents to be indexed.')
         parser.add_argument(
             '--end',
             action='store',
             dest='end_date',
             default=None,
-            type='str',
+            type=str,
             help='Specify the end date and time of documents to be indexed.')
         parser.add_argument(
             '--timeout',
             action='store',
             dest='timeout',
             default=None,
-            type='int',
+            type=int,
             help='Specify the timeout in seconds for each operation.')
 
     def handle(self, *args, **options):
