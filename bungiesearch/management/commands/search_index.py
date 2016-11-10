@@ -1,5 +1,4 @@
 from collections import defaultdict
-from optparse import make_option
 
 from django.core.management.base import BaseCommand
 from six import iteritems
@@ -13,78 +12,91 @@ class Command(BaseCommand):
     args = ''
     help = 'Manage search index.'
 
-    option_list = BaseCommand.option_list + (
-        make_option('--create',
-                    action='store_const',
-                    dest='action',
-                    const='create',
-                    help='Create the index specified in the settings with the mapping generating from the search indices.'),
-        make_option('--update',
-                    action='store_const',
-                    dest='action',
-                    const='update',
-                    help='Update the index specified in the settings with the mapping generating from the search indices.'),
-        make_option('--update-mapping',
-                    action='store_const',
-                    dest='action',
-                    const='update-mapping',
-                    help='Update the mapping of specified models (or all models) on the index specified in the settings.'),
-        make_option('--delete',
-                    action='store_const',
-                    dest='action',
-                    const='delete',
-                    help='Delete the index specified in the settings. Requires the "--guilty-as-charged" flag.'),
-        make_option('--delete-mapping',
-                    action='store_const',
-                    dest='action',
-                    const='delete-mapping',
-                    help='Delete the mapping of specified models (or all models) on the index specified in the settings. Requires the "--guilty-as-charged" flag.'),
-        make_option('--guilty-as-charged',
-                    action='store_true',
-                    dest='confirmed',
-                    default=False,
-                    help='Flag needed to delete an index.'),
-        make_option('--models',
-                    action='store',
-                    dest='models',
-                    default=None,
-                    help='Models to be updated, separated by commas. If none are specified, then all models defined in the index will be updated.'),
-        make_option('--index',
-                    action='store',
-                    dest='index',
-                    default=None,
-                    help='Specify the index for which to apply the action, as defined in BUNGIESEARCH.INDEXES of settings. Defaults to using all indices.'),
-        make_option('--bulk-size',
-                    action='store',
-                    dest='bulk_size',
-                    default=100,
-                    type='int',
-                    help='Specify the number of items to be updated together.'),
-        make_option('--num-docs',
-                    action='store',
-                    dest='num_docs',
-                    default=-1,
-                    type='int',
-                    help='Specify the maximum number of items to be indexed. By default will index the whole model.'),
-        make_option('--start',
-                    action='store',
-                    dest='start_date',
-                    default=None,
-                    type='str',
-                    help='Specify the start date and time of documents to be indexed.'),
-        make_option('--end',
-                    action='store',
-                    dest='end_date',
-                    default=None,
-                    type='str',
-                    help='Specify the end date and time of documents to be indexed.'),
-        make_option('--timeout',
-                    action='store',
-                    dest='timeout',
-                    default=None,
-                    type='int',
-                    help='Specify the timeout in seconds for each operation.')
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--create',
+            action='store_const',
+            dest='action',
+            const='create',
+            help='Create the index specified in the settings with the mapping generating from the search indices.'
         )
+        parser.add_argument(
+            '--update',
+            action='store_const',
+            dest='action',
+            const='update',
+            help='Update the index specified in the settings with the mapping generating from the search indices.')
+        parser.add_argument(
+            '--update-mapping',
+            action='store_const',
+            dest='action',
+            const='update-mapping',
+            help='Update the mapping of specified models (or all models) on the index specified in the settings.')
+        parser.add_argument(
+            '--delete',
+            action='store_const',
+            dest='action',
+            const='delete',
+            help='Delete the index specified in the settings. Requires the "--guilty-as-charged" flag.')
+        parser.add_argument(
+            '--delete-mapping',
+            action='store_const',
+            dest='action',
+            const='delete-mapping',
+            help='Delete the mapping of specified models (or all models) on the index specified in the settings. Requires the "--guilty-as-charged" flag.')
+        parser.add_argument(
+            '--guilty-as-charged',
+            action='store_true',
+            dest='confirmed',
+            default=False,
+            help='Flag needed to delete an index.')
+        parser.add_argument(
+            '--models',
+            action='store',
+            dest='models',
+            default=None,
+            help='Models to be updated, separated by commas. If none are specified, then all models defined in the index will be updated.')
+        parser.add_argument(
+            '--index',
+            action='store',
+            dest='index',
+            default=None,
+            help='Specify the index for which to apply the action, as defined in BUNGIESEARCH.INDEXES of settings. Defaults to using all indices.')
+        parser.add_argument(
+            '--bulk-size',
+            action='store',
+            dest='bulk_size',
+            default=100,
+            type='int',
+            help='Specify the number of items to be updated together.')
+        parser.add_argument(
+            '--num-docs',
+            action='store',
+            dest='num_docs',
+            default=-1,
+            type='int',
+            help='Specify the maximum number of items to be indexed. By default will index the whole model.')
+        parser.add_argument(
+            '--start',
+            action='store',
+            dest='start_date',
+            default=None,
+            type='str',
+            help='Specify the start date and time of documents to be indexed.')
+        parser.add_argument(
+            '--end',
+            action='store',
+            dest='end_date',
+            default=None,
+            type='str',
+            help='Specify the end date and time of documents to be indexed.')
+        parser.add_argument(
+            '--timeout',
+            action='store',
+            dest='timeout',
+            default=None,
+            type='int',
+            help='Specify the timeout in seconds for each operation.')
 
     def handle(self, *args, **options):
         src = Bungiesearch(timeout=options.get('timeout'))
