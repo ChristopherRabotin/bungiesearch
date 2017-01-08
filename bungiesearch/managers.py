@@ -1,3 +1,4 @@
+from django.conf import settings as dj_settings
 from django.db.models import Manager
 
 from .logger import logger
@@ -48,7 +49,8 @@ class BungiesearchManager(Manager):
         This function will check whether the given model is allowed to use the proposed alias and will raise an attribute error if not.
         '''
         # Don't treat "private" attrs as possible aliases. This prevents an infinite recursion bug.
-        if alias[0] == '_':
+        # Similarly, if Bungiesearch is installed but not enabled, raise the expected error
+        if alias[0] == '_' or not dj_settings.BUNGIESEARCH:
             raise AttributeError("'{}' object has no attribute '{}'".format(type(self), alias))
 
         return self.search.hook_alias(alias, self.model)
