@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from six import iteritems
 
 import pytz
@@ -193,6 +193,15 @@ class CoreTestCase(TestCase):
         self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
         self.assertRaises(NotImplementedError, Article.objects.bsearch_invalidalias)
         self.assertRaises(ValueError, getattr, Article.objects.search.bsearch_title('title query').bsearch_titlefilter('title filter'), 'bsearch_noupdatedmdlonly')
+
+    @override_settings(BUNGIESEARCH={})
+    def test_search_alias_not_setup(self):
+        '''
+        Tests that Bungiesearch is not instantiated when not set up
+        This is its own test due to the override_settings decorator
+        '''
+        self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_no_such_alias')
+        self.assertRaises(AttributeError, getattr, Article.objects, 'bsearch_title_search')
 
     def test_search_aliases(self):
         '''
