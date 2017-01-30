@@ -192,7 +192,15 @@ class Bungiesearch(Search):
                     desired_fields = instance._only
 
                 if desired_fields: # Prevents setting the database fetch to __fields but not having specified any field to elasticsearch.
-                    items = items.only(*[field for field in model_obj._meta.get_all_field_names() if field in desired_fields])
+                    items = items.only(
+                        *[field.name
+                          for field in model_obj._meta.get_fields()
+                          # For complete backwards compatibility, you may want to exclude
+                          # GenericForeignKey from the results.
+                          if field.name in desired_fields and \
+                             not (field.many_to_one and field.related_model is None)
+                         ]
+                    )
             # Let's reposition each item in the results and set the _searchmeta meta information.
             for item in items:
                 pos, meta = found_results['{}.{}.{}'.format(index_name, model_name, item.pk)]
