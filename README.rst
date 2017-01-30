@@ -68,6 +68,8 @@ Features
    -  Django >= 1.8
    -  Python 2.7, 3.4, 3.5
 
+**WARNING**: Django >= 1.10 is not fully supported yet.
+
 Feature examples
 ----------------
 
