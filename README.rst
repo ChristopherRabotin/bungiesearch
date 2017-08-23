@@ -1,3 +1,7 @@
+WARNING: UNMAINTAINED
+============
+This package is no longer maintained. You may want to check out the `elasticsearch-dsl-py <https://github.com/elasticsearch/elasticsearch-dsl-py>`__ or `django-haystack <https://github.com/django-haystack/django-haystack>`__.
+
 Bungiesearch
 ============
 
